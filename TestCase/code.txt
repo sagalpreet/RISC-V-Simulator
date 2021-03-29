@@ -1,0 +1,129 @@
+#Code for all the test case
+#Sum till n
+.data
+word: .word 0x7
+
+.text
+lw x10,word
+jal x1,fact
+beq x0,x0, exit
+
+fact:
+addi sp,sp,-8
+sw x1,4(sp)
+sw x10,0(sp)
+addi x5,x10,-1
+addi x7, x0, 1
+bge x5,x7,L1
+addi x10,x0,1
+addi sp,sp,8
+jalr x0,x1,0
+L1: addi x10,x10,-1
+jal x1,fact
+addi x6,x10,0
+lw x10,0(sp)
+lw x1,4(sp)
+addi sp,sp,8
+add x10,x10,x6
+jalr x0,x1,0
+exit:
+
+-------------------------------------------------
+#Factorial
+.data
+word: .word 0x7
+
+.text
+lw x10,word
+jal x1,fact
+beq x0,x0,exit
+
+fact:
+addi sp,sp,-8
+sw x1,4(sp)
+sw x10,0(sp)
+addi x5,x10,-1
+addi x7, x0, 1
+bge x5,x7,L1
+addi x10,x0,1
+addi sp,sp,8
+jalr x0,x1,0
+L1: addi x10,x10,-1
+jal x1,fact
+addi x6,x10,0
+lw x10,0(sp)
+lw x1,4(sp)
+addi sp,sp,8
+mul x10,x10,x6
+jalr x0,x1,0
+
+exit:
+-------------------------------------------------------
+#Bubble Sort
+.data
+array : .byte 1 3 5 7 9 8 0 4 2 6	# initialize array
+arr_size : .byte 10
+
+.text
+main :
+la x10,array		# load array base address in x10
+lb x11, arr_size	# load number of array elements in x11
+jal x1, bubble_sort	# call fibo(n)
+beq x0,x0,exit			# exit main
+
+bubble_sort :
+addi sp,sp,-4		# decrement stack for 2 words
+sw x1, 0(sp)		# store return address on stack
+addi x6,x11,-1		# x6 = n-1
+addi x7,x0,0		# i=0
+outer_loop : 
+bge x7,x6, exit_outer	# if i>=n-1 -> break
+addi x8,x0,0		# j=0
+addi x1,x10,0		# copy address of array to x1
+inner_loop : 
+bge x8,x6,exit_inner	# if j>=n-1 -> break
+lb x9,0(x1)		# load first array element in x9
+addi x1,x1,1		# move x1 to next element
+lb x4,0(x1)		# load 2nd element in x4
+ble x9,x4, no_swap	# if 1st element<= 2nd element, no swap just increment j
+sb x4,-1(x1)		# else store smaller element in x4
+sb x9,0(x1)		# larger element in x9
+no_swap :
+addi x8,x8,1		# j = j+1
+beq x0,x0,inner_loop			
+exit_inner : 
+addi x7,x7,1		# i= i+1
+beq x0,x0,outer_loop
+exit_outer :
+lw x1, 0(sp)		# restore return address
+addi sp,sp,4		# restore stack pointer
+jalr x0,x1,0		# return to callee
+
+exit :
+----------------------------------------------------------------
+#Fibonacci
+.data
+num1: .word 1 #store number1
+num2: .word 2 #store number2
+word: .word 5 #store total number of terms
+word1: .word 0x10000000
+
+.text
+lw x15,word
+addi x15,x15,-2
+lw x16,word1
+lw x9,num1
+lw x10,num2
+addi x16,x16,8
+fibonacci:
+add x11,x9,x10
+sw x11,0(x16)
+addi x16,x16,4
+add x9,x10,x0
+add x10,x11,x0
+addi x15,x15,-1
+beq x15,x0,exit
+beq x0,x0,fibonacci
+exit:
+
+
