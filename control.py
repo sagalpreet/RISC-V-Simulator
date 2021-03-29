@@ -7,7 +7,9 @@ pmi = memory.ProcessorMemoryInterface(4)
 reg = register.register_module()
 
 # global variables
-IR = opcode = imm = funct3 = funct7 = immediate = 0
+IR = opcode = imm = funct3 = funct7 = 0
+muxY = 0
+PC_Temp = 0
 
 with open('input.mc', 'r') as infile:
     text = True
@@ -21,50 +23,98 @@ with open('input.mc', 'r') as infile:
         if instr == TERMINATION_CODE:
             text = False
 
-def fetch():
-  global IR
-  pmi.update(alu.rz, iag.PC, alu.rm, 1, True, False, 2) # set MAR to PC
-  IR = pmi.getMDR() # get instruction corresponding to PC
+def getimm(opcode, funct3, funct7):
+  
   return
+
+
+def fetch():
+    global IR, PC_Temp
+    pmi.update(alu.rz, iag.PC, alu.rm, 1, True, 2) # set MAR to PC
+    IR = pmi.getMDR() # get instruction corresponding to PC
+    PC_Temp = iag.PC
+    return
 
 def decode():
-  global opcode, funct3, funct7, immediate
-  opcode = (2**7 - 1) & IR
-  rd = (2**12 - 2**7) & IR
-  funct3 = (2**15 - 2**12) & IR
-  rs1 = (2**20 - 2**15) & IR
-  rs2 = (2**25 - 2**20) & IR
-  funct7 = (2**32 - 2**25) & IR
-  '''
-  should we use opcode here to get immediate field by concatenating funct3, funct7, rd, rs1 and rs2 appropriately
-  or do you have some better idea ...............................................................................
-  '''
-  reg.read_register_1 = rs1
-  reg.read_register_1 = rs2
-  reg.write_register = rd
-  reg.read_register()
-  '''
-  set all the control bits in alu ...............................................................................
-  '''
-  return
+    global opcode, funct3, funct7, imm, muxY
+    opcode = (1<<7 - 1) & IR
+    rd = ((1<<12 - 1<<7) & IR)>>7
+    funct3 = ((1<<15 - 1<<12) & IR)>>12
+    rs1 = ((1<<20 - 1<<15) & IR)>>15
+    rs2 = ((1<<25 - 1<<20) & IR)>>20
+    funct7 = ((1<<32 - 1<<25) & IR)>>25
+
+    if opcode == 0b0110011: # R format
+        imm = 0
+        alu.aluSrc = 0
+        alu.aluOp = 2
+        muxY = 0
+    elif opcode == 0b0010011 or opcode == 0b0000011 or opcode == 0b1100111: # I format
+        imm = ((1<<32 - 1<<20) & IR) >> 20
+        alu.aluSrc = 1
+        if opcode == 0b0010011:
+            alu.aluOp = 2
+            muxY = 0
+        else:
+            alu.aluOp = 0
+            muxY = 1
+    elif opcode == 0b0100011: # S format
+        imm = ((1<<32 - 1<<25) & IR) >> 20 + ((1<<12-1<<7) & IR)>>7
+        alu.aluSrc = 1
+        alu.aluOp = 0
+        muxY = 0
+        pmi.mem_write = True
+        pmi.dataType = funct3
+
+    elif opcode == 0b1100011: # SB format
+        imm = ((1<<31) & IR) >> 19 + ((1<<7) & IR) << 4 + ((1<<31 - 1<<25) & IR)>>20 + ((1<<12 - 1<<8)&IR)>>7
+        alu.aluSrc = 0
+        alu.aluOp = 1
+        muxY = 0
+    elif opcode == 0b0110111 or opcode == 0b0010111:    # U format
+        imm = (1<<32 - 1<<12) & IR
+        alu.aluSrc = -1         # to disable ALU
+        alu.aluOp = 0
+        muxY = 0
+    elif opcode == 0b1101111:   # UJ format
+        imm = ((1<<31) & IR)>>11 + (1<<20 - 1<<12) & IR + ((1<<20) & IR)>>9 + ((1<<31 - 1<<21) & IR)>>20
+        alu.aluSrc = -1
+        alu.aluOp = 0
+        muxY = 2
+
+    reg.read_register_1 = rs1
+    reg.read_register_1 = rs2
+    reg.write_register = rd
+    reg.read_register()
+    return
 
 def execute():
-  global immediate
-  '''
-  perform alu operations ........................................................................................
-  '''
-  return
+    global imm, funct3, funct7
+    if alu.aluSrc != -1:
+        alu.execute(reg.read_data_1, reg.read_data_2, imm, funct3, funct7)
+    return
 
 def memory_access():
-  '''
-  fetch or write memory .........................................................................................
-  '''
-  iag.update(immediate)
-  return
+    global imm
+    alu.process_output(muxY, pmi.getMDR(), iag.PC)
+
+    pmi.update(alu.rz, iag.PC, alu.rm, 0, False)
+    pmi.update(alu.rz, iag.PC, alu.rm, 0, True)
+
+    iag.PCSrc = alu.zero
+    iag.update(imm << 1)
+
+    return
 
 def register_update():
-  # reg.reg_write = True # set this depending upon the instruction type -> should we do it in decode itself or create a mux ?
-  # reg.write_data = # this will depend upon above decision
+  if muxY in [0, 1, 2]: # if register is not be updated reg_write maybe set to some value like -1
+    reg.reg_write = True
+  if muxY == 0:
+      reg.write_data = alu.rz
+    elif muxY == 1:
+      reg.write_data = pmi.getMDR()
+    elif muxY == 2:
+      reg.write_data = PC_Temp
   reg.register_update()
   reg.reg_write = False
   return
