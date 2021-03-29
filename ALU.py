@@ -3,6 +3,7 @@ class ALU:
         self.__op = 0
         self.rz = 0
         self.rm = 0
+        self.ry = 0
         self.aluSrc = 0
         self.aluOp = 0
         self.__inv_zero = 0
@@ -79,6 +80,14 @@ class ALU:
             self.__op = 10 + funct7&32>>5  # which is decided by funct7
         elif funct3 == 2:   # slt
             self.__op = 12
+    
+    def process_output(self, muxY, mar, return_addr):
+        if muxY == 0:
+            self.ry = self.rz
+        elif muxY == 1:
+            self.ry = mar
+        else:
+            self.ry = return_addr
 """
 add: 000, 0000000
 addi: 000
