@@ -1,79 +1,93 @@
 class ALU:
     def __init__(self):
-        self.Op = 0
+        self.__op = 0
         self.rz = 0
-        self.inv_zero = 0
+        self.rm = 0
+        self.ry = 0
+        self.aluSrc = 0
+        self.aluOp = 0
+        self.__inv_zero = 0
     
-    def execute(self):
+    def execute(self, rs1, rs2, imm, funct3, funct7):
         op1 = rs1
-        op2 = rs2 if aluSrc == 0 else imm
+        op2 = rs2 if self.aluSrc == 0 else imm
         
-        self.control()
+        self.rm = rs2
 
-        if self.Op == 1:    # add
+        self.control(funct3, funct7)
+
+        if self.__op == 1:    # add
             self.rz = op1 + op2
-        elif self.Op == 2:  # sub
+        elif self.__op == 2:  # sub
             self.rz = op1 - op2
-        elif self.Op == 3:  # mul
+        elif self.__op == 3:  # mul
             self.rz = op1 * op2
-        elif self.Op == 4:  # div
+        elif self.__op == 4:  # div
             self.rz = op1 // op2
-        elif self.Op == 5:  # rem
+        elif self.__op == 5:  # rem
             self.rz = op1 % op2
-        elif self.Op == 6:  # and
+        elif self.__op == 6:  # and
             self.rz = op1 & op2
-        elif self.Op == 7:  # or
+        elif self.__op == 7:  # or
             self.rz = op1 | op2
-        elif self.Op == 8:  # xor
+        elif self.__op == 8:  # xor
             self.rz = op1 ^ op2
-        elif self.Op == 9:  # sll
+        elif self.__op == 9:  # sll
             self.rz = op1 << op2
-        elif self.Op == 10:  # srl
+        elif self.__op == 10:  # srl
             self.rz = (op1 % (1 << 32)) >> op2
-        elif self.Op == 11: # sra
+        elif self.__op == 11: # sra
             self.rz = op1 >> op2
-        elif self.Op == 12: # slt
+        elif self.__op == 12: # slt
             self.rz = int(op1 < op2)
         zero = self.rz == 0
-        if self.inv_zero:
+        if self.__inv_zero:
             zero = not zero
     
-    def control(self):
-        if aluOp == 0:
-            self.Op = 1
-        elif aluOp&1 == 1:  # for branch operations
+    def control(self, funct3, funct7):
+        if self.aluOp == 0:
+            self.__op = 1
+        elif self.aluOp&1 == 1:  # for branch operations
             if funct3&4 == 0:   # beq or bne
-                self.Op = 2     # use sub
-                self.inv_zero = funct3&1    # invert zero if bne
-            else                # blt or bge
-                self.Op = 12    # use slt
-                self.inv_zero = 1-funct&1   # invert zero if blt
+                self.__op = 2     # use sub
+                self.__inv_zero = funct3&1    # invert zero if bne
+            else:             # blt or bge
+                self.__op = 12    # use slt
+                self.__inv_zero = 1-funct3&1   # invert zero if blt
         elif funct3 == 0:   # add/sub/mul
-            if aluSrc == 1 or funct7 == 0:
-                self.Op = 1 # add/addi
+            if self.aluSrc == 1 or funct7 == 0:
+                self.__op = 1 # add/addi
             elif funct7 == 1:
-                self.Op = 3 # mul
+                self.__op = 3 # mul
             elif funct7 == 32:
-                self.Op = 2 # sub
-            self.Op = funct7&32>>5 + 1 # which is determined by funct3
+                self.__op = 2 # sub
+            self.__op = funct7&32>>5 + 1 # which is determined by funct3
         elif funct3 == 7:   # and
-            self.Op = 6
-        elif funct3 = 6:    # or/rem
-            if aluSrc == 1 or funct7 == 0:
-                self.Op = 7 # or/ori
+            self.__op = 6
+        elif funct3 == 6:    # or/rem
+            if self.aluSrc == 1 or funct7 == 0:
+                self.__op = 7 # or/ori
             elif funct7 == 1:
-                self.Op = 5 # rem
+                self.__op = 5 # rem
         elif funct3 == 4:   # xor/div
-            if aluSrc == 1 or funct7 == 0:
-                self.Op = 8 # xor/xori
+            if self.aluSrc == 1 or funct7 == 0:
+                self.__op = 8 # xor/xori
             elif funct7 == 1:
-                self.Op = 4 # div
+                self.__op = 4 # div
         elif funct3 == 1:   # sll
-            self.Op = 9
+            self.__op = 9
         elif funct3 == 101: # srl/sra
-            self.Op = 10 + funct7&32>>5  # which is decided by funct7
+            self.__op = 10 + funct7&32>>5  # which is decided by funct7
         elif funct3 == 2:   # slt
-            self.Op = 12
+            self.__op = 12
+    
+    def process_output(self, muxY, mar, return_addr):
+        if muxY == 0:
+            self.ry = self.rz
+        elif muxY == 1:
+            self.ry = mar
+        else:
+            self.ry = return_addr
 """
 add: 000, 0000000
 addi: 000
