@@ -23,10 +23,6 @@ with open('input.mc', 'r') as infile:
         if instr == TERMINATION_CODE:
             text = False
 
-def getimm(opcode, funct3, funct7):
-  
-  return
-
 
 def fetch():
     global IR, PC_Temp
