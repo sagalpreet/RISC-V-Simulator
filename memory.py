@@ -9,17 +9,19 @@ class ProcessorMemoryInterface:
         self.__memory = ByteAddressableMemory(wordSizeInBytes=wordSizeInBytes)
         self.__MAR = None
         self.__MDR = None
+        self.mem_write = False
 
     def __isValidDatatype(self, dataType: int):
         return dataType in [self.BYTE, self.HALFWORD, self.WORD, self.DOUBLEWORD]
 
-    def update(self, rz: int, iag: int, rm: int, mux_control, mem_read, mem_write, dataType: int):
+    def update(self, rz: int, iag: int, rm: int, mux_control, mem_read, dataType: int):
         self.__MAR = rz if mux_control==0 else iag
         self.__MDR = rm
         if mem_read:
             self.__MDR = self.__readFromMemory(self.__MAR, dataType)
-        if mem_write:
+        if self.mem_write:
             self.__writeToMemory(self.__MAR, dataType, self.__MDR)
+            self.mem_write = False
 
     def __readFromMemory(self, address: int, dataType: int):
         assert self.__isValidDatatype(dataType), f'Invalid dataType (value: {dataType})'
