@@ -45,6 +45,7 @@ class ALU:
         self.zero = self.rz == 0
         if self.__inv_zero:
             self.zero = not self.zero
+        self.zero = int(self.zero)
     
     def control(self, funct3, funct7):
         if self.aluOp == 0:

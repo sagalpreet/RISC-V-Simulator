@@ -27,12 +27,17 @@ class register_module:
         and values of rs1 and rs2 have been extracted.
 
         """
-        rs_1 = int(self.read_register_1, 2)        
-        self.read_data_1 = int(self.register[rs_1], 2)
+        try:
+            rs_1 = int(self.read_register_1, 2)        
+            self.read_data_1 = int(self.register[rs_1], 2)
+        except:
+            self.read_data_1 = 0
         
-        rs_2 = int(self.read_register_2, 2)        
-        self.read_data_2 = int(self.register[rs_2], 2)
-        
+        try:
+            rs_2 = int(self.read_register_2, 2)        
+            self.read_data_2 = int(self.register[rs_2], 2)
+        except:
+            self.read_data_2 = 0
         #reg_a = self.read_data_1  # updating the global variable 
         #reg_b = self.read_data_2  # updating the global variable
     
@@ -44,6 +49,7 @@ class register_module:
 
         """
         if self.reg_write == True:
+            print(self.write_register)
             rd = int(self.write_register, 2)
             self.register[rd] = self.write_data
 
