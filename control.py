@@ -52,7 +52,7 @@ def decode():
                 branch = 1
                 alu.muxY = -1
     elif opcode == 0b0100011: # S format
-        imm = (((1<<32) - (1<<25)) & IR) >> 20 + (((1<<12)-(1<<7)) & IR)>>7
+        imm = ((((1<<32) - (1<<25)) & IR) >> 20) + ((((1<<12)-(1<<7)) & IR)>>7)
         alu.aluSrc = 1
         alu.aluOp = 0
         alu.muxY = -1
@@ -60,7 +60,7 @@ def decode():
         pmi.dataType = funct3
         branch = 0
     elif opcode == 0b1100011: # SB format
-        imm = ((1<<31) & IR) >> 19 + ((1<<7) & IR) << 4 + (((1<<31) - (1<<25)) & IR)>>20 + (((1<<12) - (1<<8))&IR)>>7
+        imm = (((1<<31) & IR) >> 19) + (((1<<7) & IR) << 4) + ((((1<<31) - (1<<25)) & IR)>>20) + ((((1<<12) - (1<<8))&IR)>>7)
         alu.aluSrc = 0
         alu.aluOp = 1
         alu.muxY = -1
@@ -72,7 +72,7 @@ def decode():
         alu.muxY = 0
         branch = 0
     elif opcode == 0b1101111:   # UJ format
-        imm = ((1<<31) & IR)>>11 + ((1<<20) - (1<<12)) & IR + ((1<<20) & IR)>>9 + (((1<<31) - (1<<21)) & IR)>>20
+        imm = (((1<<31) & IR)>>11) + (((1<<20) - (1<<12)) & IR) + (((1<<20) & IR)>>9) + ((((1<<31) - (1<<21)) & IR)>>20)
         alu.aluSrc = -1
         alu.aluOp = 0
         alu.muxY = 2
@@ -96,7 +96,7 @@ def memory_access():
     pmi.update(alu.rz, iag.PC, alu.rm, 0)
 
     iag.PCSrc = alu.zero & branch
-    iag.update(imm << 1)
+    iag.update(imm)
 
     return
 
@@ -113,29 +113,32 @@ def register_update():
     reg.reg_write = False
     return
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Need one argument for input file")
-        exit()
-    
-    with open(sys.argv[1], 'r') as infile:
-        text = True
-        for line in infile:
-            mloc, instr = [int(x, 16) for x in line.split()]
-            if text:
-                pmi.memory.setWordAtAddress(mloc, instr)
-            else:
-                pmi.memory.setByteAtAddress(mloc, instr)
-                
-            if instr == TERMINATION_CODE:
-                text = False
-    
+def run(file):
+    with open(file, 'r') as infile:
+            text = True
+            for line in infile:
+                mloc, instr = [int(x, 16) for x in line.split()]
+                if text:
+                    pmi.memory.setWordAtAddress(mloc, instr)
+                else:
+                    pmi.memory.setByteAtAddress(mloc, instr)
+                    
+                if instr == TERMINATION_CODE:
+                    text = False
+        
     while (True):
         fetch()
         print(iag.PC, IR)
-        if IR == TERMINATION_CODE:
+        if IR == TERMINATION_CODE or IR == 0    :
             break
         decode()
         execute()
         memory_access()
         register_update()
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Need one argument for input file")
+        exit()
+    
+    run(sys.argv[1])
