@@ -84,11 +84,11 @@ class ALU:
         elif funct3 == 2:   # slt
             self.__op = 12
     
-    def process_output(self, mar, return_addr):
+    def process_output(self, mdr, return_addr):
         if self.muxY == 0:
             self.ry = self.rz
         elif self.muxY == 1:
-            self.ry = mar
+            self.ry = mdr
         else:
             self.ry = return_addr
 """

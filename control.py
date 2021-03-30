@@ -67,7 +67,7 @@ def decode():
         branch = 1
     elif opcode == 0b0110111 or opcode == 0b0010111:    # U format
         imm = ((1<<32) - (1<<12)) & IR
-        alu.aluSrc = -1         # to disable ALU
+        alu.aluSrc = 1         # to disable ALU
         alu.aluOp = 0
         alu.muxY = 0
         branch = 0
@@ -91,8 +91,6 @@ def execute():
 
 def memory_access():
     global imm
-    alu.process_output(pmi.getMDR(), iag.PC)
-
     pmi.update(alu.rz, iag.PC, alu.rm, 0)
 
     iag.PCSrc = alu.zero & branch
@@ -101,14 +99,10 @@ def memory_access():
     return
 
 def register_update():
+    alu.process_output(pmi.getMDR(), iag.PC)
     if alu.muxY in [0, 1, 2]: # if register is not be updated reg_write maybe set to some value like -1
         reg.reg_write = True
-    if alu.muxY == 0:
-        reg.write_data = "{0:b}".format(alu.rz)
-    elif alu.muxY == 1:
-      reg.write_data = "{0:b}".format(pmi.getMDR())
-    elif alu.muxY == 2:
-      reg.write_data = "{0:b}".format(PC_Temp)
+    reg.write_data = alu.ry
     reg.register_update()
     reg.reg_write = False
     return
