@@ -129,7 +129,7 @@ def run(file):
     while (True):
         fetch()
         print(iag.PC, IR)
-        if IR == TERMINATION_CODE or IR == 0    :
+        if IR == TERMINATION_CODE or IR == 0:
             break
         decode()
         execute()
