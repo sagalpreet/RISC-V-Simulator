@@ -23,12 +23,12 @@ def fetch():
 
 def decode():
     global opcode, funct3, funct7, imm, branch
-    opcode = (1<<7 - 1) & IR
-    rd = ((1<<12 - 1<<7) & IR)>>7
-    funct3 = ((1<<15 - 1<<12) & IR)>>12
-    rs1 = ((1<<20 - 1<<15) & IR)>>15
-    rs2 = ((1<<25 - 1<<20) & IR)>>20
-    funct7 = ((1<<32 - 1<<25) & IR)>>25
+    opcode = ((1<<7) - 1) & IR
+    rd = (((1<<12) - (1<<7)) & IR)>>7
+    funct3 = (((1<<15) - (1<<12)) & IR)>>12
+    rs1 = (((1<<20) - (1<<15)) & IR)>>15
+    rs2 = (((1<<25) - (1<<20)) & IR)>>20
+    funct7 = (((1<<32) - (1<<25)) & IR)>>25
 
     if opcode == 0b0110011: # R format
         imm = 0
@@ -37,7 +37,7 @@ def decode():
         alu.muxY = 0
         branch = 0
     elif opcode == 0b0010011 or opcode == 0b0000011 or opcode == 0b1100111: # I format
-        imm = ((1<<32 - 1<<20) & IR) >> 20
+        imm = (((1<<32) - (1<<20)) & IR) >> 20
         alu.aluSrc = 1
         if opcode == 0b0010011:
             alu.aluOp = 2
@@ -52,7 +52,7 @@ def decode():
                 branch = 1
                 alu.muxY = -1
     elif opcode == 0b0100011: # S format
-        imm = ((1<<32 - 1<<25) & IR) >> 20 + ((1<<12-1<<7) & IR)>>7
+        imm = (((1<<32) - (1<<25)) & IR) >> 20 + (((1<<12)-(1<<7)) & IR)>>7
         alu.aluSrc = 1
         alu.aluOp = 0
         alu.muxY = -1
@@ -60,19 +60,19 @@ def decode():
         pmi.dataType = funct3
         branch = 0
     elif opcode == 0b1100011: # SB format
-        imm = ((1<<31) & IR) >> 19 + ((1<<7) & IR) << 4 + ((1<<31 - 1<<25) & IR)>>20 + ((1<<12 - 1<<8)&IR)>>7
+        imm = ((1<<31) & IR) >> 19 + ((1<<7) & IR) << 4 + (((1<<31) - (1<<25)) & IR)>>20 + (((1<<12) - (1<<8))&IR)>>7
         alu.aluSrc = 0
         alu.aluOp = 1
         alu.muxY = -1
         branch = 1
     elif opcode == 0b0110111 or opcode == 0b0010111:    # U format
-        imm = (1<<32 - 1<<12) & IR
+        imm = ((1<<32) - (1<<12)) & IR
         alu.aluSrc = -1         # to disable ALU
         alu.aluOp = 0
         alu.muxY = 0
         branch = 0
     elif opcode == 0b1101111:   # UJ format
-        imm = ((1<<31) & IR)>>11 + (1<<20 - 1<<12) & IR + ((1<<20) & IR)>>9 + ((1<<31 - 1<<21) & IR)>>20
+        imm = ((1<<31) & IR)>>11 + ((1<<20) - (1<<12)) & IR + ((1<<20) & IR)>>9 + (((1<<31) - (1<<21)) & IR)>>20
         alu.aluSrc = -1
         alu.aluOp = 0
         alu.muxY = 2
