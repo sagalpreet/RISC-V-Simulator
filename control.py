@@ -113,6 +113,14 @@ def register_update():
     reg.reg_write = False
     return
 
+def step():
+    fetch()
+    print(iag.PC, "{:b}".format(IR))
+    decode()
+    execute()
+    memory_access()
+    register_update()
+
 def run(file):
     with open(file, 'r') as infile:
             text = True
@@ -127,14 +135,9 @@ def run(file):
                     text = False
         
     while (True):
-        fetch()
-        print(iag.PC, "{:b}".format(IR))
+        step()
         if IR == TERMINATION_CODE or IR == 0:
             break
-        decode()
-        execute()
-        memory_access()
-        register_update()
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
