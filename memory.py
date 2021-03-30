@@ -6,47 +6,50 @@ class ProcessorMemoryInterface:
 
     def __init__(self, wordSizeInBytes: int):
         self.__wordSizeInBytes = wordSizeInBytes
-        self.__memory = ByteAddressableMemory(wordSizeInBytes=wordSizeInBytes)
+        self.memory = ByteAddressableMemory(wordSizeInBytes=wordSizeInBytes)
         self.__MAR = None
         self.__MDR = None
+        self.mem_read = False
         self.mem_write = False
         self.dataType = -1
 
     def __isValidDatatype(self, dataType: int):
         return dataType in [self.BYTE, self.HALFWORD, self.WORD, self.DOUBLEWORD]
 
-    def update(self, rz: int, iag: int, rm: int, mux_control, mem_read, dataType: int = self.dataType):
+    def update(self, rz: int, iag: int, rm: int, mux_control):
         self.__MAR = rz if mux_control==0 else iag
         self.__MDR = rm
-        if mem_read:
-            self.__MDR = self.__readFromMemory(self.__MAR, dataType)
+        if self.mem_read:
+            self.mem_read = False
+            self.__MDR = self.__readFromMemory(self.__MAR, self.dataType)
+            self.dataType = -1
         if self.mem_write:
-            assert dataType in set([0, 1, 2, 3]), f'Invalid dataType (value: {dataType})'
-            self.__writeToMemory(self.__MAR, dataType, self.__MDR)
+            assert self.dataType in set([0, 1, 2, 3]), f'Invalid dataType (value: {self.dataType})'
+            self.__writeToMemory(self.__MAR, self.dataType, self.__MDR)
             self.mem_write = False
             self.dataType = -1
 
     def __readFromMemory(self, address: int, dataType: int):
         assert self.__isValidDatatype(dataType), f'Invalid dataType (value: {dataType})'
         if dataType == self.BYTE:
-            return self.__memory.getByteAtAddress(address)
+            return self.memory.getByteAtAddress(address)
         elif dataType == self.HALFWORD:
-            return self.__memory.getHalfwordAtAddress(address)
+            return self.memory.getHalfwordAtAddress(address)
         elif dataType == self.WORD:
-            return self.__memory.getWordAtAddress(address)
+            return self.memory.getWordAtAddress(address)
         elif dataType == self.DOUBLEWORD:
-            return self.__memory.getDoublewordAtAddress(address)
+            return self.memory.getDoublewordAtAddress(address)
 
     def __writeToMemory(self, address: int, dataType: int, value: int):
         assert self.__isValidDatatype(dataType), f'Invalid dataType (value: {dataType})'
         if dataType == self.BYTE:
-            self.__memory.setByteAtAddress(address, value)
+            self.memory.setByteAtAddress(address, value)
         elif dataType == self.HALFWORD:
-            self.__memory.setHalfwordAtAddress(address, value)
+            self.memory.setHalfwordAtAddress(address, value)
         elif dataType == self.WORD:
-            self.__memory.setWordAtAddress(address, value)
+            self.memory.setWordAtAddress(address, value)
         elif dataType == self.DOUBLEWORD:
-            self.__memory.setDoublewordAtAddress(address, value)
+            self.memory.setDoublewordAtAddress(address, value)
 
     def getMDR(self):
         return self.__MDR

@@ -4,9 +4,11 @@ class ALU:
         self.rz = 0
         self.rm = 0
         self.ry = 0
+        self.muxY = 0
         self.aluSrc = 0
         self.aluOp = 0
         self.__inv_zero = 0
+        self.zero = 0
     
     def execute(self, rs1, rs2, imm, funct3, funct7):
         op1 = rs1
@@ -40,9 +42,9 @@ class ALU:
             self.rz = op1 >> op2
         elif self.__op == 12: # slt
             self.rz = int(op1 < op2)
-        zero = self.rz == 0
+        self.zero = self.rz == 0
         if self.__inv_zero:
-            zero = not zero
+            self.zero = not self.zero
     
     def control(self, funct3, funct7):
         if self.aluOp == 0:
@@ -81,10 +83,10 @@ class ALU:
         elif funct3 == 2:   # slt
             self.__op = 12
     
-    def process_output(self, muxY, mar, return_addr):
-        if muxY == 0:
+    def process_output(self, mar, return_addr):
+        if self.muxY == 0:
             self.ry = self.rz
-        elif muxY == 1:
+        elif self.muxY == 1:
             self.ry = mar
         else:
             self.ry = return_addr
