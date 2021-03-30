@@ -49,7 +49,6 @@ class register_module:
 
         """
         if self.reg_write == True:
-            print(self.write_register)
             rd = int(self.write_register, 2)
             self.register[rd] = self.write_data
 

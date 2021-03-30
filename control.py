@@ -128,7 +128,7 @@ def run(file):
         
     while (True):
         fetch()
-        print(iag.PC, IR)
+        print(iag.PC, "{:b}".format(IR))
         if IR == TERMINATION_CODE or IR == 0:
             break
         decode()
