@@ -4,10 +4,15 @@ class ALU:
         self.rz = 0
         self.rm = 0
         self.ry = 0
+        # output of stage 3, input to stage 4 determined by muxY
         self.muxY = 0
+        # Is the second operand rs2 or imm
         self.aluSrc = 0
+        # 0 for add (load, store), X1 for branch (chooses operation and inv_zero)
         self.aluOp = 0
+        # inverts self.zero if true
         self.__inv_zero = 0
+        # 0 if output of operation is 0, 1 otherwise. Flipped if self.__inv_zero is 1
         self.zero = 0
     
     def execute(self, rs1, rs2, imm, funct3, funct7):
@@ -43,12 +48,13 @@ class ALU:
         elif self.__op == 12: # slt
             self.rz = int(op1 < op2)
         self.zero = self.rz == 0
-        if self.__inv_zero:
+        if self.__inv_zero == 1:
             self.zero = not self.zero
+        self.__inv_zero = 0
         self.zero = int(self.zero)
     
     def control(self, funct3, funct7):
-        if self.aluOp == 0:
+        if self.aluOp == 0:     # for load/store instructions
             self.__op = 1
         elif self.aluOp&1 == 1:  # for branch operations
             if funct3&4 == 0:   # beq or bne
@@ -84,7 +90,7 @@ class ALU:
         elif funct3 == 2:   # slt
             self.__op = 12
     
-    def process_output(self, mdr, return_addr):
+    def process_output(self, mdr, return_addr): # output is either rz, MDR or return address
         if self.muxY == 0:
             self.ry = self.rz
         elif self.muxY == 1:
