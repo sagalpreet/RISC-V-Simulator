@@ -78,7 +78,7 @@ def decode():
         alu.muxY = 2
         branch = 1
     reg.read_register_1 = "{0:b}".format(rs1)
-    reg.read_register_1 = "{0:b}".format(rs2)
+    reg.read_register_2 = "{0:b}".format(rs2)
     reg.write_register = "{0:b}".format(rd)
     reg.read_register()
     return
