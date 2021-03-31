@@ -38,6 +38,8 @@ def decode():
         branch = 0
     elif opcode == 0b0010011 or opcode == 0b0000011 or opcode == 0b1100111: # I format
         imm = (((1<<32) - (1<<20)) & IR) >> 20
+        if (imm>>11)&1 == 1:            # check if sign bit is 1
+            imm = -((imm ^ (1<<12-1)) + 1)
         alu.aluSrc = 1
         if opcode == 0b0010011:
             alu.aluOp = 2
@@ -53,6 +55,8 @@ def decode():
                 alu.muxY = -1
     elif opcode == 0b0100011: # S format
         imm = ((((1<<32) - (1<<25)) & IR) >> 20) + ((((1<<12)-(1<<7)) & IR)>>7)
+        if (imm>>11)&1 == 1:            # check if sign bit is 1
+            imm = -((imm^(1<<12-1)) + 1)
         alu.aluSrc = 1
         alu.aluOp = 0
         alu.muxY = -1
@@ -61,6 +65,8 @@ def decode():
         branch = 0
     elif opcode == 0b1100011: # SB format
         imm = (((1<<31) & IR) >> 19) + (((1<<7) & IR) << 4) + ((((1<<31) - (1<<25)) & IR)>>20) + ((((1<<12) - (1<<8))&IR)>>7)
+        if (imm>>12)&1 == 1:            # check if sign bit is 1
+            imm = -((imm^(1<<13-1)) + 1)
         alu.aluSrc = 0
         alu.aluOp = 1
         alu.muxY = -1
@@ -73,6 +79,8 @@ def decode():
         branch = 0
     elif opcode == 0b1101111:   # UJ format
         imm = (((1<<31) & IR)>>11) + (((1<<20) - (1<<12)) & IR) + (((1<<20) & IR)>>9) + ((((1<<31) - (1<<21)) & IR)>>20)
+        if (imm>>20)&1 == 1:            # check if sign bit is 1
+            imm = -((imm^(1<<21-1)) + 1)
         alu.aluSrc = -1
         alu.aluOp = 0
         alu.muxY = 2
@@ -85,14 +93,12 @@ def decode():
 
 def execute():
     global imm, funct3, funct7
-    if alu.aluSrc != -1:
-        alu.execute(reg.read_data_1, reg.read_data_2, imm, funct3, funct7)
+    alu.execute(reg.read_data_1, reg.read_data_2, imm, funct3, funct7)
     return
 
 def memory_access():
     global imm
     pmi.update(alu.rz, iag.PC, alu.rm, 0)
-
     iag.PCSrc = alu.zero & branch
     iag.update(imm)
 

@@ -54,7 +54,9 @@ class ALU:
         self.zero = int(self.zero)
     
     def control(self, funct3, funct7):
-        if self.aluOp == 0:     # for load/store instructions
+        if self.aluOp == -1:
+            self.zero = 1
+        elif self.aluOp == 0:     # for load/store instructions
             self.__op = 1
         elif self.aluOp&1 == 1:  # for branch operations
             if funct3&4 == 0:   # beq or bne
