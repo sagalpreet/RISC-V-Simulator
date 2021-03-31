@@ -14,7 +14,7 @@ class register_module:
         self.write_register = '00000'   # write_register: 5 bit binary string for the rd register
         self.read_data_1 = 0 # integer data for contents retreived from read_register_1
         self.read_data_2 = 0 # integer data for contents retreived from read_register_2
-        self.write_data = '00000000000000000000000000000000' # 32 bit binary string for data to be written
+        self.write_data = 0 # integer data to be written
         self.reg_write = False # flag to tell if data has to written 
         
     def read_register(self):
@@ -25,7 +25,6 @@ class register_module:
         
         This should be called in step 2 after decoding the instruction has been done
         and values of rs1 and rs2 have been extracted.
-
         """
         try:
             rs_1 = int(self.read_register_1, 2)        
@@ -44,32 +43,30 @@ class register_module:
     def register_update(self):
         """
         
-        If the reg write flag is set to True, writes the data present in write_data
-        to the register specified by write_register.    
-
+        If the reg write flag is set to True, writes the data present in write_data(int type)
+        to the register specified by write_register as a binary string.
+        
+        
         """
         if self.reg_write == True:
             rd = int(self.write_register, 2)
-            self.register[rd] = bin(self.write_data)[2:]
+            self.register[rd] = bin(self.write_data)
 
 
 """
 ############### Sample to use the register module ############### 
 reg = register_module()
-
 # reading from register module
 reg.read_register_1 = '00001'
-reg.read_register_1 = '00010'
+reg.read_register_2 = '00010'
 reg.read_register()
 print(reg.read_data_1)
 print(reg.read_data_2)
-
 # writing to register module
 reg.reg_write = True
-reg.write_data = '00000000000000000000000000001111'
+reg.write_data = 5
 reg.write_register = '00011'
 reg.register_update()
-
 # reading the data written above
 reg.read_register_1 = '00011'
 reg.read_register()
