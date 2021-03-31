@@ -24,7 +24,7 @@ class ProcessorMemoryInterface:
             self.__MDR = self.__readFromMemory(self.__MAR, self.dataType)
             self.dataType = -1
         if self.mem_write:
-            assert self.dataType in set([0, 1, 2, 3]), f'Invalid dataType (value: {self.dataType})'
+            assert self.__isValidDatatype(self.dataType), f'Invalid dataType (value: {self.dataType})'
             self.__writeToMemory(self.__MAR, self.dataType, self.__MDR)
             self.mem_write = False
             self.dataType = -1
