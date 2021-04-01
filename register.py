@@ -50,7 +50,9 @@ class register_module:
         """
         if self.reg_write == True:
             rd = int(self.write_register, 2)
-            self.register[rd] = bin(self.write_data)
+            self.register[rd] = bin(self.write_data)[2:]
+
+        self.reg_write = False
 
 
 """

@@ -7,7 +7,9 @@ class ALU:
         # output of stage 3, input to stage 4 determined by muxY
         self.muxY = 0
         # Is the second operand rs2 or imm
-        self.aluSrc = 0
+        self.muxB = 0
+        # input to op1. Is it rs1 or PCTemp?
+        self.muxA = 0
         # 0 for add (load, store), X1 for branch (chooses operation and inv_zero)
         self.aluOp = 0
         # inverts self.zero if true
@@ -15,14 +17,17 @@ class ALU:
         # 0 if output of operation is 0, 1 otherwise. Flipped if self.__inv_zero is 1
         self.zero = 0
     
-    def execute(self, rs1, rs2, imm, funct3, funct7):
-        op1 = rs1
-        op2 = rs2 if self.aluSrc == 0 else imm
-        
+    def execute(self, rs1, rs2, imm, funct3, funct7, pc):
+        op1 = rs1 if self.muxA == 0 else pc
+        op2 = rs2 if self.muxB == 0 else imm
         self.rm = rs2
 
+        if self.aluOp == -1:
+            self.zero = 1
+            self.rz = 0
+            return
+        
         self.control(funct3, funct7)
-
         if self.__op == 1:    # add
             self.rz = op1 + op2
         elif self.__op == 2:  # sub
@@ -54,9 +59,7 @@ class ALU:
         self.zero = int(self.zero)
     
     def control(self, funct3, funct7):
-        if self.aluOp == -1:
-            self.zero = 1
-        elif self.aluOp == 0:     # for load/store instructions
+        if self.aluOp == 0:     # for load/store instructions
             self.__op = 1
         elif self.aluOp&1 == 1:  # for branch operations
             if funct3&4 == 0:   # beq or bne
@@ -66,7 +69,7 @@ class ALU:
                 self.__op = 12    # use slt
                 self.__inv_zero = 1-funct3&1   # invert zero if blt
         elif funct3 == 0:   # add/sub/mul
-            if self.aluSrc == 1 or funct7 == 0:
+            if self.muxB == 1 or funct7 == 0:
                 self.__op = 1 # add/addi
             elif funct7 == 1:
                 self.__op = 3 # mul
@@ -76,12 +79,12 @@ class ALU:
         elif funct3 == 7:   # and
             self.__op = 6
         elif funct3 == 6:    # or/rem
-            if self.aluSrc == 1 or funct7 == 0:
+            if self.muxB == 1 or funct7 == 0:
                 self.__op = 7 # or/ori
             elif funct7 == 1:
                 self.__op = 5 # rem
         elif funct3 == 4:   # xor/div
-            if self.aluSrc == 1 or funct7 == 0:
+            if self.muxB == 1 or funct7 == 0:
                 self.__op = 8 # xor/xori
             elif funct7 == 1:
                 self.__op = 4 # div
@@ -97,7 +100,7 @@ class ALU:
             self.ry = self.rz
         elif self.muxY == 1:
             self.ry = mdr
-        else:
+        elif self.muxY == 2:
             self.ry = return_addr
 """
 add: 000, 0000000
