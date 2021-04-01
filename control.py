@@ -121,7 +121,7 @@ def execute():
 def memory_access():
     global imm
     pmi.update(alu.rz, iag.PC, alu.rm, 0)
-    alu.process_output(pmi.getMDR(), iag.PC)
+    alu.process_output(pmi.getMDR(), iag.PC+4)
     iag.PCSrc = alu.zero & branch | ((branch & jump)<<1)
     print(alu.zero, branch)
     iag.update(imm, alu.rz)
