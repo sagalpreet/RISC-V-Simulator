@@ -59,6 +59,7 @@ class ALU:
         self.zero = int(self.zero)
     
     def control(self, funct3, funct7):
+        print("F", self.aluOp, funct3, funct7)
         if self.aluOp == 0:     # for load/store instructions
             self.__op = 1
         elif self.aluOp&1 == 1:  # for branch operations
@@ -75,7 +76,6 @@ class ALU:
                 self.__op = 3 # mul
             elif funct7 == 32:
                 self.__op = 2 # sub
-            self.__op = funct7&32>>5 + 1 # which is determined by funct3
         elif funct3 == 7:   # and
             self.__op = 6
         elif funct3 == 6:    # or/rem
