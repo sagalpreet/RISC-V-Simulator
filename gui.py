@@ -107,7 +107,6 @@ class window:
         for i in memory:
             memTree.insert(parent='', index='end', iid=i, text="", values=(hex(i), hex(memory[i])))
 
-
 class leftPane:
     def __init__(self, parent):
         self.instructions = {}
@@ -250,6 +249,21 @@ class rightPane:
         go.grid(row=0, column=2, sticky='news')
 
     def go(self):
+        try:
+            iid = int(self.toGo.get(), 16)
+
+            first = int(self.tree.get_children()[0])
+            last = int(self.tree.get_children()[-1])
+
+            extent = (iid - first) / (last - first)
+
+            self.tree.yview_moveto(extent)
+
+            self.tree.focus(iid)
+            self.tree.selection_set(iid)
+        except:
+            pass
+
         return
 
 class bottomPane:
