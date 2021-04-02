@@ -87,7 +87,7 @@ class leftPane:
         parentFrame.rowconfigure(0, weight=1)
         
         instructionFrame = ttk.Frame(parentFrame)
-        instructionFrame.grid(row=0, column=0, sticky='news')
+        instructionFrame.grid(row=0, column=0, sticky='nws')
         instructionFrame.columnconfigure(0, weight=1)
         instructionFrame.rowconfigure(0, weight=1)
         self.setupInstructionFrame(instructionFrame)
@@ -99,7 +99,10 @@ class leftPane:
         self.setupButtonFrame(buttonFrame)
 
     def setupInstructionFrame(self, parent):
-        tree = ttk.Treeview(parent, selectmode='none')
+        tree_scroll = ttk.Scrollbar(parent)
+        tree_scroll.pack(side=RIGHT, fill=Y)
+
+        tree = ttk.Treeview(parent, selectmode='none', yscrollcommand=tree_scroll.set)
         tree['columns'] = ['PC', 'Instruction']
 
         tree.column('#0', width=0, stretch=NO)
@@ -109,7 +112,9 @@ class leftPane:
         tree.heading('PC', text='PC')
         tree.heading('Instruction', text='Instruction')
 
-        tree.grid(row=0, column=0, sticky='news')
+        tree.pack(side=LEFT, fill=BOTH, expand=True)
+        tree_scroll.config(command=tree.yview)
+        #tree.grid(row=0, column=0, sticky='news')
 
     def setupButtonFrame(self, parent):
         run = ttk.Button(parent, text="Run") # button to execute to the end of program
@@ -134,7 +139,10 @@ class midPane:
         self.setupRegisterFrame(parentFrame)
 
     def setupRegisterFrame(self, parent):
-        tree = ttk.Treeview(parent, selectmode='browse')
+        tree_scroll = ttk.Scrollbar(parent)
+        tree_scroll.pack(side=RIGHT, fill=Y)
+
+        tree = ttk.Treeview(parent, selectmode='browse', yscrollcommand=tree_scroll.set)
         tree['columns'] = ['Register Number', 'Register Content']
 
         tree.column('#0', width=0, stretch=NO)
@@ -144,7 +152,9 @@ class midPane:
         tree.heading('Register Number', text='Register Number')
         tree.heading('Register Content', text='Register Content')
 
-        tree.grid(row=0, column=0, sticky='news')
+        tree.pack(side=LEFT, fill=BOTH)
+        tree_scroll.config(command=tree.yview)
+        #tree.grid(row=0, column=0, sticky='news')
 
 class rightPane:
     def __init__(self, parent):
@@ -169,7 +179,10 @@ class rightPane:
         self.setupButtonFrame(buttonFrame)
 
     def setupMemoryFrame(self, parent):
-        tree = ttk.Treeview(parent, selectmode='browse')
+        tree_scroll = ttk.Scrollbar(parent)
+        tree_scroll.pack(side=RIGHT, fill=Y)
+
+        tree = ttk.Treeview(parent, selectmode='browse', yscrollcommand=tree_scroll.set)
         tree['columns'] = ['Memory Address', 'Memory Content']
 
         tree.column('#0', width=0, stretch=NO)
@@ -179,7 +192,9 @@ class rightPane:
         tree.heading('Memory Address', text='Memory Address')
         tree.heading('Memory Content', text='Memory Content')
 
-        tree.grid(row=0, column=0, sticky='news')
+        tree.pack(side=LEFT, fill=BOTH)
+        tree_scroll.config(command=tree.yview)
+        #tree.grid(row=0, column=0, sticky='news')
 
     def setupButtonFrame(self, parent):
         ttk.Label(parent, text="Address to go: ").grid(row=0, column=0, sticky='nws')
