@@ -76,8 +76,10 @@ def decode():
         jump = 0                # don't jump
     elif opcode == 0b1100011: # SB format
         imm = (((1<<31) & IR) >> 19) + (((1<<7) & IR) << 4) + ((((1<<31) - (1<<25)) & IR)>>20) + ((((1<<12) - (1<<8))&IR)>>7)
+        print(imm, '{:b}'.format(imm))
         if (imm>>12)&1 == 1:            # check if sign bit is 1
-            imm = -((imm^(1<<13-1)) + 1)
+            imm = -((imm^((1<<13)-1)) + 1)
+        print(imm, '{:b}'.format(imm))
         alu.muxA = 0            # op1 is rs1
         alu.muxB = 0            # op2 is rs2
         alu.aluOp = 1           # determine branch operation by funct3
@@ -107,6 +109,7 @@ def decode():
         alu.muxY = 2            # output is return address
         branch = 1              # branch
         jump = 0                # don't jump
+    print(f"CNT 7:{funct7} rs2:{rs2} rs1:{rs1} imm:{imm}, 3:{funct3}, rd:{rd}, op:{opcode}")
     reg.read_register_1 = "{0:b}".format(rs1)
     reg.read_register_2 = "{0:b}".format(rs2)
     reg.write_register = "{0:b}".format(rd)
@@ -130,6 +133,7 @@ def memory_access():
 def register_update():
     reg.write_data = alu.ry
     reg.register_update()
+    print("RU")
     return
 
 def step():

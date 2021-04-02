@@ -28,6 +28,7 @@ class ALU:
             return
         
         self.control(funct3, funct7)
+        print(f"ALU A{self.muxA}, B{self.muxB}, 1:{op1}, 2:{op2}, 3:{funct3}, 7:{funct7}, op:{self.__op}, inv{self.__inv_zero}, Y{self.muxY}, Op{self.aluOp}")
         if self.__op == 1:    # add
             self.rz = op1 + op2
         elif self.__op == 2:  # sub

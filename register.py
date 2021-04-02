@@ -9,6 +9,8 @@ class register_module:
         self.num_registers = 32
         self.register_size = 32
         self.register = ['0'*self.register_size for j in range(self.num_registers)]
+        self.register[2] = '{:b}'.format(0x7FFFFFF0)   # sp
+        self.register[3] = '{:b}'.format(0x10000000)   # gp
         self.read_register_1 = '00000'  # read_register_1: 5 bit binary string for the rs1 register
         self.read_register_2 = '00000'  # read_register_2: 5 bit binary string for the rs2 register
         self.write_register = '00000'   # write_register: 5 bit binary string for the rd register
@@ -49,10 +51,12 @@ class register_module:
         
         """
         if self.reg_write == True:
+            self.reg_write = False
             rd = int(self.write_register, 2)
+            if rd == 0:
+                return
             self.register[rd] = bin(self.write_data)[2:]
 
-        self.reg_write = False
 
 
 """
