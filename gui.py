@@ -102,19 +102,19 @@ class leftPane:
         tree_scroll = ttk.Scrollbar(parent)
         tree_scroll.pack(side=RIGHT, fill=Y)
 
-        tree = ttk.Treeview(parent, selectmode='none', yscrollcommand=tree_scroll.set)
-        tree['columns'] = ['PC', 'Instruction']
+        self.tree = ttk.Treeview(parent, selectmode='none', yscrollcommand=tree_scroll.set)
+        self.tree['columns'] = ['PC', 'Instruction']
 
-        tree.column('#0', width=0, stretch=NO)
-        tree.column('PC', width=100, anchor=CENTER)
-        tree.column('Instruction', anchor=CENTER)
+        self.tree.column('#0', width=0, stretch=NO)
+        self.tree.column('PC', width=100, anchor=CENTER)
+        self.tree.column('Instruction', anchor=CENTER)
 
-        tree.heading('PC', text='PC')
-        tree.heading('Instruction', text='Instruction')
+        self.tree.heading('PC', text='PC')
+        self.tree.heading('Instruction', text='Instruction')
 
-        tree.pack(side=LEFT, fill=BOTH, expand=True)
-        tree_scroll.config(command=tree.yview)
-        #tree.grid(row=0, column=0, sticky='news')
+        self.tree.pack(side=LEFT, fill=BOTH, expand=True)
+        tree_scroll.config(command=self.tree.yview)
+        #self.tree.grid(row=0, column=0, sticky='news')
 
     def setupButtonFrame(self, parent):
         run = ttk.Button(parent, text="Run") # button to execute to the end of program
@@ -154,7 +154,7 @@ class midPane:
 
         tree.pack(side=LEFT, fill=BOTH)
         tree_scroll.config(command=tree.yview)
-        #tree.grid(row=0, column=0, sticky='news')
+        #self.tree.grid(row=0, column=0, sticky='news')
 
 class rightPane:
     def __init__(self, parent):
@@ -194,7 +194,7 @@ class rightPane:
 
         tree.pack(side=LEFT, fill=BOTH)
         tree_scroll.config(command=tree.yview)
-        #tree.grid(row=0, column=0, sticky='news')
+        #self.tree.grid(row=0, column=0, sticky='news')
 
     def setupButtonFrame(self, parent):
         ttk.Label(parent, text="Address to go: ").grid(row=0, column=0, sticky='nws')
@@ -229,7 +229,23 @@ class bottomPane:
         self.filenameLabel['text'] = filename
 
     def load(self):
+        global win
+        filename = self.filenameLabel['text']
+        TERMINATION_CODE = 0xFFFFFFFF
+        left = win.lPane
+        try:
+            tree = left.tree
+            with open(filename, 'r') as infile:
+                for line in infile:
+                    mloc, instr = [str(x) for x in line.split()]
+                    tree.insert(parent='', index='end', iid=int(mloc, 16), text="", values=(mloc, instr))
+                    if int(instr, 16) == TERMINATION_CODE:
+                        break
+        except:
+            print("Error loading")
         return
 
+###################
 win = window()
 win.root.mainloop()
+###################
