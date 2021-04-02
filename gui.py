@@ -75,6 +75,39 @@ class window:
     def setupBottom(self):
         self.bPane = bottomPane(self.mainframe)
 
+    def update(self, pc, register, memory):
+        '''
+        pc : integer
+        register : list of 32 integers
+        memory : dictionary -> keys(address): integers, values(value at that address): integers
+        '''
+        
+        # update pc
+        instrTree = win.lPane.tree
+        try:
+            instrTree.item(self.pc, tags='normal')
+        except:
+            pass
+        instrTree.item(pc, tags='highlight')
+        self.pc = pc
+
+        # update reg
+        regTree = win.mPane.tree
+        for i in range(32):
+            prevReg = regTree.item(i, 'values')
+            newReg = ('x'+str(i), hex(register[i]))
+            if prevReg != newReg:
+                regTree.item(i, values=newReg, tags='updated')
+            else:
+                regTree.item(i, tags='normal')
+
+        # update mem
+        memTree = win.rPane.tree
+        memTree.delete(*memTree.get_children())
+        for i in memory:
+            memTree.insert(parent='', index='end', iid=i, text="", values=(hex(i), hex(memory[i])))
+
+
 class leftPane:
     def __init__(self, parent):
         self.instructions = {}
@@ -116,6 +149,9 @@ class leftPane:
         tree_scroll.config(command=self.tree.yview)
         #self.tree.grid(row=0, column=0, sticky='news')
 
+        self.tree.tag_configure('normal', background="white")
+        self.tree.tag_configure('highlight', background="lightblue")
+
     def setupButtonFrame(self, parent):
         run = ttk.Button(parent, text="Run") # button to execute to the end of program
         run.grid(column=0, row=0, sticky='news')
@@ -142,19 +178,22 @@ class midPane:
         tree_scroll = ttk.Scrollbar(parent)
         tree_scroll.pack(side=RIGHT, fill=Y)
 
-        tree = ttk.Treeview(parent, selectmode='browse', yscrollcommand=tree_scroll.set)
-        tree['columns'] = ['Register Number', 'Register Content']
+        self.tree = ttk.Treeview(parent, selectmode='browse', yscrollcommand=tree_scroll.set)
+        self.tree['columns'] = ['Register Number', 'Register Content']
 
-        tree.column('#0', width=0, stretch=NO)
-        tree.column('Register Number', width=150, anchor=CENTER)
-        tree.column('Register Content', anchor=CENTER)
+        self.tree.column('#0', width=0, stretch=NO)
+        self.tree.column('Register Number', width=150, anchor=CENTER)
+        self.tree.column('Register Content', anchor=CENTER)
 
-        tree.heading('Register Number', text='Register Number')
-        tree.heading('Register Content', text='Register Content')
+        self.tree.heading('Register Number', text='Register Number')
+        self.tree.heading('Register Content', text='Register Content')
 
-        tree.pack(side=LEFT, fill=BOTH)
-        tree_scroll.config(command=tree.yview)
+        self.tree.pack(side=LEFT, fill=BOTH)
+        tree_scroll.config(command=self.tree.yview)
         #self.tree.grid(row=0, column=0, sticky='news')
+
+        self.tree.tag_configure('normal', background="white")
+        self.tree.tag_configure('updated', background="lightgreen")
 
 class rightPane:
     def __init__(self, parent):
@@ -182,19 +221,22 @@ class rightPane:
         tree_scroll = ttk.Scrollbar(parent)
         tree_scroll.pack(side=RIGHT, fill=Y)
 
-        tree = ttk.Treeview(parent, selectmode='browse', yscrollcommand=tree_scroll.set)
-        tree['columns'] = ['Memory Address', 'Memory Content']
+        self.tree = ttk.Treeview(parent, selectmode='browse', yscrollcommand=tree_scroll.set)
+        self.tree['columns'] = ['Memory Address', 'Memory Content']
 
-        tree.column('#0', width=0, stretch=NO)
-        tree.column('Memory Address', width=200, anchor=CENTER)
-        tree.column('Memory Content', anchor=CENTER)
+        self.tree.column('#0', width=0, stretch=NO)
+        self.tree.column('Memory Address', width=200, anchor=CENTER)
+        self.tree.column('Memory Content', anchor=CENTER)
 
-        tree.heading('Memory Address', text='Memory Address')
-        tree.heading('Memory Content', text='Memory Content')
+        self.tree.heading('Memory Address', text='Memory Address')
+        self.tree.heading('Memory Content', text='Memory Content')
 
-        tree.pack(side=LEFT, fill=BOTH)
-        tree_scroll.config(command=tree.yview)
+        self.tree.pack(side=LEFT, fill=BOTH)
+        tree_scroll.config(command=self.tree.yview)
         #self.tree.grid(row=0, column=0, sticky='news')
+
+        self.tree.tag_configure('normal', background="white")
+        self.tree.tag_configure('updated', background="lightyellow")
 
     def setupButtonFrame(self, parent):
         ttk.Label(parent, text="Address to go: ").grid(row=0, column=0, sticky='nws')
@@ -232,17 +274,30 @@ class bottomPane:
         global win
         filename = self.filenameLabel['text']
         TERMINATION_CODE = 0xFFFFFFFF
-        left = win.lPane
         try:
-            tree = left.tree
+            instrTree = win.lPane.tree
+            regTree = win.mPane.tree
+            memTree = win.rPane.tree
+
+            instrTree.delete(*instrTree.get_children())
+            memTree.delete(*memTree.get_children())
+            regTree.delete(*regTree.get_children())
+
+            text = True
             with open(filename, 'r') as infile:
                 for line in infile:
-                    mloc, instr = [str(x) for x in line.split()]
-                    tree.insert(parent='', index='end', iid=int(mloc, 16), text="", values=(mloc, instr))
+                    if text == True:
+                        mloc, instr = [str(x) for x in line.split()]
+                        instrTree.insert(parent='', index='end', iid=int(mloc, 16), text="", values=(mloc, instr))
+                    else:
+                        mloc, value = [hex(int(x, 16)) for x in line.split()]
+                        memTree.insert(parent='', index='end', iid=int(mloc, 16), text="", values=(mloc, value))
                     if int(instr, 16) == TERMINATION_CODE:
-                        break
+                        text = False
+            for i in range(32):
+                regTree.insert(parent='', index='end', iid=i, text="", values=('x'+str(i), hex(0)))
         except:
-            print("Error loading")
+            print("Error Reading Instructions and Memory Values")
         return
 
 ###################
