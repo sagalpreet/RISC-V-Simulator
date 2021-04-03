@@ -12,7 +12,8 @@ class Control:
         self.IR = self.opcode = self.imm = self.funct3 = self.funct7 = 0
         self.branch = self.jump = 0
         self.PC_Temp = 0
-    
+        self.substep_counter = 0
+
     def fetch(self):
         self.pmi.mem_read = True
         self.pmi.dataType = 2
@@ -132,14 +133,27 @@ class Control:
         self.reg.register_update()
         print("RU")
         return
+    
+    def substep(self):
+        if self.substep_counter == 0:
+            self.fetch()
+            print(self.iag.PC, "{:b}".format(self.IR))
+        elif self.substep_counter == 1:
+            self.decode()
+        elif self.substep_counter == 2:
+            self.execute()
+        elif self.substep_counter == 3:
+            self.memory_access()
+        elif self.substep_counter == 4:
+            self.register_update()
+        self.substep_counter += 1
+        self.substep_counter %= 5
 
     def step(self):
-        self.fetch()
-        print(self.iag.PC, "{:b}".format(self.IR))
-        self.decode()
-        self.execute()
-        self.memory_access()
-        self.register_update()
+        for _ in range(5):
+            self.substep()
+            if self.substep_counter == 0:
+                break
 
     def load(self, file):
         with open(file, 'r') as infile:
