@@ -20,6 +20,7 @@ class window:
         self.root.configure()
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
+        self.root.minsize(1100, 700)
         self.w, self.h = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
 
     def setupMenu(self):
@@ -87,24 +88,23 @@ class window:
         memory : dictionary -> keys(address): integers, values(value at that address): integers
         '''
 
-        print(pc)
-        print(register)
-        print(memory)
-
         # update pc
         instrTree = self.lPane.tree
         try:
             instrTree.item(self.pc, tags='normal')
         except:
             pass
-        instrTree.item(pc, tags='highlight')
-        self.pc = pc
+        try:
+            instrTree.item(pc, tags='highlight')
+            self.pc = pc
+        except:
+            instrTree.item(instrTree.get_children()[-1], tags='ended')
 
         # update reg
         regTree = self.mPane.tree
         for i in range(32):
             prevReg = regTree.item(i, 'values')
-            newReg = ('x'+str(i), hex(register[i]))
+            newReg = ('x'+str(i), '0x'+format(register[i], '08X'))
             if prevReg != newReg:
                 regTree.item(i, values=newReg, tags='updated')
             else:
@@ -114,7 +114,7 @@ class window:
         memTree = self.rPane.tree
         memTree.delete(*memTree.get_children())
         for i in memory:
-            memTree.insert(parent='', index='end', iid=i, text="", values=(hex(i), hex(memory[i])))
+            memTree.insert(parent='', index='end', iid=i, text="", values=('0x'+format(i, '08X'), '0x'+format(memory[i], '02X')))
 
 class leftPane:
     def __init__(self, parent, win):
@@ -160,6 +160,7 @@ class leftPane:
 
         self.tree.tag_configure('normal', background="white")
         self.tree.tag_configure('highlight', background="lightblue")
+        self.tree.tag_configure('ended', background="red")
 
     def setupButtonFrame(self, parent):
         run = ttk.Button(parent, text="Run", command=self.run) # button to execute to the end of program
@@ -181,9 +182,21 @@ class leftPane:
         return
     
     def next(self):
+        control = self.win.control
+        control.step()
+        pc = control.iag.PC
+        register = control.reg.register
+        memory = control.pmi.memory._ByteAddressableMemory__byteData
+        self.win.update(pc, register, memory)
         return
     
     def next_(self):
+        control = self.win.control
+        control.substep()
+        pc = control.iag.PC
+        register = control.reg.register
+        memory = control.pmi.memory._ByteAddressableMemory__byteData
+        self.win.update(pc, register, memory)
         return
 
 class midPane:
@@ -316,7 +329,8 @@ class bottomPane:
         filename = self.filenameLabel['text']
         TERMINATION_CODE = 0xFFFFFFFF
         try:
-            win.control.load(filename)      # file loaded into control
+            win.control.reset()
+            win.control.load(filename)
 
             instrTree = win.lPane.tree
             regTree = win.mPane.tree
@@ -338,7 +352,7 @@ class bottomPane:
                     if int(instr, 16) == TERMINATION_CODE:
                         text = False
             for i in range(32):
-                regTree.insert(parent='', index='end', iid=i, text="", values=('x'+str(i), hex(0)))
+                regTree.insert(parent='', index='end', iid=i, text="", values=('x'+str(i), '0x'+format(0, '08X')))
 
             control = win.control
             pc = control.iag.PC
