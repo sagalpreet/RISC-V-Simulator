@@ -14,6 +14,18 @@ class Control:
         self.PC_Temp = 0
         self.substep_counter = 0
 
+    def reset(self):
+        self.iag = IAG.IAG(0)
+        self.alu = ALU.ALU()
+        self.pmi = memory.ProcessorMemoryInterface(4)
+        self.reg = register.register_module()
+
+        # global variables
+        self.IR = self.opcode = self.imm = self.funct3 = self.funct7 = 0
+        self.branch = self.jump = 0
+        self.PC_Temp = 0
+        self.substep_counter = 0
+
     def fetch(self):
         self.pmi.mem_read = True
         self.pmi.dataType = 2
