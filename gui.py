@@ -3,7 +3,7 @@ from tkinter import ttk, filedialog
 import tkinter as tk
 
 class window:
-    def __init__(self):
+    def __init__(self, control):
         self.setupRoot()
         self.setupMenu()
         self.setupMain()
@@ -11,6 +11,8 @@ class window:
         self.setupRight()
         self.setupMid()
         self.setupBottom()
+        
+        self.control = control
     
     def setupRoot(self):
         self.root = Tk()
@@ -64,7 +66,7 @@ class window:
         self.mainframe.rowconfigure(0, weight=1)
 
     def setupLeft(self):
-        self.lPane = leftPane(self.mainframe)
+        self.lPane = leftPane(self.mainframe, self)
 
     def setupMid(self):
         self.mPane = midPane(self.mainframe)
@@ -73,17 +75,24 @@ class window:
         self.rPane = rightPane(self.mainframe)
 
     def setupBottom(self):
-        self.bPane = bottomPane(self.mainframe)
+        self.bPane = bottomPane(self.mainframe, self)
 
     def update(self, pc, register, memory):
+
+        register = [int(i, 2) for i in register]
+
         '''
         pc : integer
         register : list of 32 integers
         memory : dictionary -> keys(address): integers, values(value at that address): integers
         '''
-        
+
+        print(pc)
+        print(register)
+        print(memory)
+
         # update pc
-        instrTree = win.lPane.tree
+        instrTree = self.lPane.tree
         try:
             instrTree.item(self.pc, tags='normal')
         except:
@@ -92,7 +101,7 @@ class window:
         self.pc = pc
 
         # update reg
-        regTree = win.mPane.tree
+        regTree = self.mPane.tree
         for i in range(32):
             prevReg = regTree.item(i, 'values')
             newReg = ('x'+str(i), hex(register[i]))
@@ -102,14 +111,15 @@ class window:
                 regTree.item(i, tags='normal')
 
         # update mem
-        memTree = win.rPane.tree
+        memTree = self.rPane.tree
         memTree.delete(*memTree.get_children())
         for i in memory:
             memTree.insert(parent='', index='end', iid=i, text="", values=(hex(i), hex(memory[i])))
 
 class leftPane:
-    def __init__(self, parent):
-        self.instructions = {}
+    def __init__(self, parent, win):
+        self.win = win
+
         self.setupGUI(parent)
 
     def setupGUI(self, parent):
@@ -152,14 +162,29 @@ class leftPane:
         self.tree.tag_configure('highlight', background="lightblue")
 
     def setupButtonFrame(self, parent):
-        run = ttk.Button(parent, text="Run") # button to execute to the end of program
+        run = ttk.Button(parent, text="Run", command=self.run) # button to execute to the end of program
         run.grid(column=0, row=0, sticky='news')
 
-        next = ttk.Button(parent, text="Next Instruction") # button to execute current instruction and go to next instruction
+        next = ttk.Button(parent, text="Next Instruction", command=self.next) # button to execute current instruction and go to next instruction
         next.grid(column=1, row=0, sticky='news')
 
-        next_ = ttk.Button(parent, text="Next Substep") # button to execute current substep (F-E-D-M-U)
+        next_ = ttk.Button(parent, text="Next Substep", command=self.next_) # button to execute current substep (F-E-D-M-U)
         next_.grid(column=2, row=0, sticky='news')
+
+    def run(self):
+        control = self.win.control
+        control.run()
+        pc = control.iag.PC
+        register = control.reg.register
+        memory = control.pmi.memory._ByteAddressableMemory__byteData
+        self.win.update(pc, register, memory)
+        return
+    
+    def next(self):
+        return
+    
+    def next_(self):
+        return
 
 class midPane:
     def __init__(self, parent):
@@ -267,7 +292,9 @@ class rightPane:
         return
 
 class bottomPane:
-    def __init__(self, parent):
+    def __init__(self, parent, win):
+        self.win = win
+
         parentFrame = ttk.Frame(parent, border=1, relief=RIDGE)
         parentFrame.grid(row=1, column=0, columnspan=3, sticky='news')
         parentFrame.columnconfigure(0, weight=1)
@@ -285,10 +312,12 @@ class bottomPane:
         self.filenameLabel['text'] = filename
 
     def load(self):
-        global win
+        win = self.win
         filename = self.filenameLabel['text']
         TERMINATION_CODE = 0xFFFFFFFF
         try:
+            win.control.load(filename)      # file loaded into control
+
             instrTree = win.lPane.tree
             regTree = win.mPane.tree
             memTree = win.rPane.tree
@@ -310,11 +339,13 @@ class bottomPane:
                         text = False
             for i in range(32):
                 regTree.insert(parent='', index='end', iid=i, text="", values=('x'+str(i), hex(0)))
+
+            control = win.control
+            pc = control.iag.PC
+            register = control.reg.register
+            memory = control.pmi.memory._ByteAddressableMemory__byteData
+            win.update(pc, register, memory)
+            
         except:
             print("Error Reading Instructions and Memory Values")
         return
-
-###################
-win = window()
-win.root.mainloop()
-###################
