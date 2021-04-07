@@ -36,8 +36,8 @@ class register_module:
         except:
             self.read_data_2 = 0
         
-        print(f"\tA: {self.read_data_1:08x}")
-        print(f"\tB: {self.read_data_2:08x}")
+        print(f"\tA: 0x{self.read_data_1:08x}")
+        print(f"\tB: 0x{self.read_data_2:08x}")
     
 
     def register_update(self):
@@ -52,7 +52,7 @@ class register_module:
             self.reg_write = False
             if self.rd == 0:
                 return
-            print(f"\tWriting value {self.write_data:08x} to register x{self.rd}")
+            print(f"\tWriting value 0x{self.write_data:08x} to register x{self.rd}")
             self.register[self.rd] = self.write_data
 
 

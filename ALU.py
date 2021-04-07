@@ -22,11 +22,11 @@ class ALU:
     def execute(self, rs1, rs2, imm, funct3, funct7, pc):
         op1 = rs1 if self.muxA == 0 else pc
         op2 = rs2 if self.muxB == 0 else imm
-        print(f"\talu.operand1: {op1:08x}")
-        print(f"\talu.toperand2: {op2:08x}")
+        print(f"\talu.operand1: 0x{op1:08x}")
+        print(f"\talu.toperand2: 0x{op2:08x}")
 
         self.rm = rs2
-        print(f"\talu.RM: {self.rm:08x}")
+        print(f"\talu.RM: 0x{self.rm:08x}")
         # no operation to be performed
         if self.aluOp == 3:
             print("\tNo operation: exiting")
@@ -61,7 +61,7 @@ class ALU:
         elif self.__op == 12: # slt
             self.rz = int(op1 < op2)
 
-        print(f"\talu.RZ: {self.rz:08x}")
+        print(f"\talu.RZ: 0x{self.rz:08x}")
         # zero bit is 1 if the result is zero
         self.zero = self.rz == 0
         print(f"\talu.zero: {self.zero}")
@@ -120,4 +120,4 @@ class ALU:
             self.ry = mdr
         elif self.muxY == 2:
             self.ry = return_addr
-        print(f"\talu.RY: {self.ry:08x}")
+        print(f"\talu.RY: 0x{self.ry:08x}")

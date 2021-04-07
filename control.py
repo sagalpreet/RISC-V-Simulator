@@ -44,7 +44,7 @@ class Control:
         self.pmi.update(self.alu.rz, self.iag.PC, self.alu.rm, 1)
         # get instruction corresponding to PC
         self.IR = self.pmi.getMDR()
-        print(f"\tIR: {self.IR:08x}")
+        print(f"\tIR: 0x{self.IR:08x}")
         self.PC_Temp = self.iag.PC
 
     def decode(self):
@@ -57,12 +57,12 @@ class Control:
         self.reg.rs2 = (((1<<25) - (1<<20)) & self.IR)>>20
         self.funct7 = (((1<<32) - (1<<25)) & self.IR)>>25
         print("DECODE")
-        print(f"\tOpcode: {self.opcode:07b}")
-        print(f"\trd: {self.reg.rd:05b}")
-        print(f"\tfunct3: {self.funct3:03b}")
-        print(f"\trs1: {self.reg.rs1:05b}")
-        print(f"\trs2: {self.reg.rs2:05b}")
-        print(f"\tfunct7: {self.funct7:07b}")
+        print(f"\tOpcode: 0b{self.opcode:07b}")
+        print(f"\trd: 0b{self.reg.rd:05b}")
+        print(f"\tfunct3: 0b{self.funct3:03b}")
+        print(f"\trs1: 0b{self.reg.rs1:05b}")
+        print(f"\trs2: 0b{self.reg.rs2:05b}")
+        print(f"\tfunct7: 0b{self.funct7:07b}")
 
         if self.opcode == 0b0110011: # R format
             print("\tR format detected")
@@ -152,12 +152,12 @@ class Control:
             self.branch = 1              # branch
             self.jump = 0                # don't jump
         
-        print(f"\talu.muxA: {self.alu.muxA}")
-        print(f"\talu.muxB: {self.alu.muxB}")
-        print(f"\talu.aluOp: {self.alu.aluOp}")
-        print(f"\talu.muxY: {self.alu.muxY}")
-        print(f"\tbranch: {self.branch}")
-        print(f"\tjump: {self.jump}")
+        print(f"\talu.muxA: 0b{self.alu.muxA}")
+        print(f"\talu.muxB: 0b{self.alu.muxB}")
+        print(f"\talu.aluOp: 0b{self.alu.aluOp}")
+        print(f"\talu.muxY: 0b{self.alu.muxY}")
+        print(f"\tbranch: 0b{self.branch}")
+        print(f"\tjump: 0b{self.jump}")
         print(f"\treg_write: {self.reg.reg_write}")
         print(f"\tmem_read: {self.pmi.mem_read}")
         print(f"\tmem_write: {self.pmi.mem_write}")

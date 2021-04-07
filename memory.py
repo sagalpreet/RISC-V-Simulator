@@ -30,12 +30,12 @@ class ProcessorMemoryInterface:
         self.__MAR = rz if mux_control==0 else iag
         self.__MDR = rm
         if self.mem_read:
-            print(f"\tReading {['byte', 'halfword', 'word', 'doubleword'][self.dataType]} from memory location {self.__MAR:08x}")
+            print(f"\tReading {['byte', 'halfword', 'word', 'doubleword'][self.dataType]} from memory location 0x{self.__MAR:08x}")
             self.mem_read = False
             self.__MDR = self.__readFromMemory(self.__MAR, self.dataType)
             self.dataType = -1
         if self.mem_write:
-            print(f"\tWriting {['byte', 'halfword', 'word', 'doubleword'][self.dataType]} {self.__MDR:08x} to memory location {self.__MAR:08x}")
+            print(f"\tWriting {['byte', 'halfword', 'word', 'doubleword'][self.dataType]} 0x{self.__MDR:08x} to memory location 0x{self.__MAR:08x}")
             assert self.__isValidDatatype(self.dataType), f'Invalid dataType (value: {self.dataType})'
             self.__writeToMemory(self.__MAR, self.dataType, self.__MDR)
             self.mem_write = False
