@@ -62,11 +62,11 @@ UJ format - jal
 ### Directory Structure
 RISC-V-Simulator
 - Test Case Folder
-    - bubblesort.mc :contains machine code to run bubble sort on elements to sort them.
-    - factorial.mc :calculates factorial of an integer stored and saves it in x10 register
-    - fibonacci.mc :stores elements of fibonacci series in the memory
-    - sumtilln.mc :finds sum of first n positive integers
-    - code.txt :contains all the code used to generate the machine code
+    - bubblesort.mc: contains machine code to run bubble sort on elements to sort them.
+    - factorial.mc: calculates factorial of an integer stored and saves it in x10 register
+    - fibonacci.mc: stores elements of fibonacci series in the memory
+    - sumtilln.mc: finds sum of first n positive integers
+    - code.txt: contains all the code used to generate the machine code
  - ALU.py
  - IAG.py
  - README.md
