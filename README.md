@@ -75,3 +75,14 @@ RISC-V-Simulator
  - memory.py
  - register.py
  - main.py
+
+### Work Split
+Although we worked as a team and helped each other with the work assigned, following can give the idea of work distribution:
+```
+Aayush Sabharwal - ALU, Control, Documentation
+Aman Palariya - Memory
+Sagalpreet Singh - IAG, GUI, Control (Minor), Documentation
+Uday Gupta - Register
+Amritanshu - Testcases, Documentation
+
+```
