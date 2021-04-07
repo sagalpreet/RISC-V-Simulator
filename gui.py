@@ -80,8 +80,6 @@ class window:
 
     def update(self, pc, register, memory):
 
-        register = [int(i, 2) for i in register]
-
         '''
         pc : integer
         register : list of 32 integers
@@ -104,7 +102,10 @@ class window:
         regTree = self.mPane.tree
         for i in range(32):
             prevReg = regTree.item(i, 'values')
-            newReg = ('x'+str(i), '0x'+format(register[i], '08X'))
+            regi = register[i]
+            if regi < 0:
+                regi = 2**32 + regi
+            newReg = ('x'+str(i), '0x'+format(regi, '08X'))
             if prevReg != newReg:
                 regTree.item(i, values=newReg, tags='updated')
             else:
