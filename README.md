@@ -33,14 +33,14 @@ UJ format - jal
 
 
 - Clone the repository to your local machine. (Some features may not work properly on windows)
-- Install pip3.
-- Open terminal and run the following commands.
+- Install tkinter and python3 (tkinter is shipped with python).
+- Open terminal and run the following command.
 ```
-        pip3 install -r requirements.txt
         python3 main.py
 ```
 
-### How to use the application ?
+### How to use the application ? 
+  [1 minute tutorial](https://drive.google.com/file/d/1Awq1aoI_zdwVIDJv-dfGpSKirQcaYJAN/view?usp=sharing)
 - Click on **File** in the menubar and select **open**.
 - Browse through your PC, select the required .mc file and click **open**.
 - The address of selected file should now be visible on the **bottom-most bar**.
