@@ -54,6 +54,7 @@ UJ format - jal
 - At the end of execution the **PC** turns red.
 - At each instruction, current instruction and corresponding PC is highlighted.
 - Any change made in register module is also highlighted.
+- Only the *Open* option of menubar is functional as of now, other options will be made functional as and when required in the subsequent phases of the project.
 
 ### Input File Format
 - Create a file with *.mc* extension that contains the machine code.
