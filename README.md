@@ -85,7 +85,7 @@ RISC-V-Simulator
  - register.py
  - main.py
 
-### Work Split
+### Work Distribution
 Although we worked as a team and helped each other with the work assigned, following can give the idea of work distribution:
 ```
 Aayush Sabharwal - ALU, Control, Documentation
