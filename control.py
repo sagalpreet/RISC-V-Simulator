@@ -35,7 +35,7 @@ class Control:
 
     # fetch step
     def fetch(self):
-        print("FETCH\n")
+        print("FETCH")
         # read memory
         self.pmi.mem_read = True
         # read a word
