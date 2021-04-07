@@ -56,7 +56,7 @@ class Control:
         self.reg.rs1 = (((1<<20) - (1<<15)) & self.IR)>>15
         self.reg.rs2 = (((1<<25) - (1<<20)) & self.IR)>>20
         self.funct7 = (((1<<32) - (1<<25)) & self.IR)>>25
-        print("BRANCH")
+        print("DECODE")
         print(f"\tOpcode: {self.opcode:07b}")
         print(f"\trd: {self.reg.rd:05b}")
         print(f"\tfunct3: {self.funct3:03b}")
