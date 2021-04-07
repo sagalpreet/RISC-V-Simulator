@@ -32,7 +32,7 @@ UJ format - jal
 ### How to run ?
 
 
-- Clone the repository to your local machine.
+- Clone the repository to your local machine. (Some features may not work properly on windows)
 - Install pip3.
 - Open terminal and run the following commands.
 ```
@@ -55,6 +55,7 @@ UJ format - jal
 - At each instruction, current instruction and corresponding PC is highlighted.
 - Any change made in register module is also highlighted.
 - Only the *Open* option of menubar is functional as of now, other options will be made functional as and when required in the subsequent phases of the project.
+- Clicking the **Dump** button will dump the memory file into *filename_out.mc* (filename is the input file) which will be created in the same location as the input file.
 
 ### Input File Format
 - Create a file with *.mc* extension that contains the machine code.
