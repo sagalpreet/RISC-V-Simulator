@@ -6,7 +6,7 @@ register module
 
 class register_module:
     def __init__(self):
-        self.register = [0 for j in range(32)]
+        self.register = [0 for j in range(32)] # 32 registers initialized
         self.register[2] = 0x7FFFFFF0   # sp
         self.register[3] = 0x10000000   # gp
         self.rs1 = 0  # rs1: 5 bit binary string for the rs1 register
@@ -15,7 +15,7 @@ class register_module:
         self.read_data_1 = 0 # integer data for contents retreived from rs1
         self.read_data_2 = 0 # integer data for contents retreived from rs2
         self.write_data = 0 # integer data to be written
-        self.reg_write = False # flag to tell if data has to written 
+        self.reg_write = False # flag to tell if data has to be written 
         
     def read_register(self):
         """
@@ -50,7 +50,7 @@ class register_module:
         """
         if self.reg_write == True:
             self.reg_write = False
-            if self.rd == 0:
+            if self.rd == 0:        # since the register 0 always stores constant value 0
                 return
             print(f"\tWriting value 0x{self.write_data:08x} to register x{self.rd}")
             self.register[self.rd] = self.write_data
