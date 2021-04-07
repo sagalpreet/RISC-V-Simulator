@@ -13,7 +13,9 @@ class Control:
         self.IR = self.opcode = self.imm = self.funct3 = self.funct7 = 0
         self.branch = self.jump = 0
         self.PC_Temp = 0
-        self.substep_counter = 0
+
+        # modulo 5 clock for substeps
+        self.clock = 0
 
         # input file
         self.file = ""
@@ -29,7 +31,7 @@ class Control:
         self.IR = self.opcode = self.imm = self.funct3 = self.funct7 = 0
         self.branch = self.jump = 0
         self.PC_Temp = 0
-        self.substep_counter = 0
+        self.clock = 0
 
     # fetch step
     def fetch(self):
@@ -189,19 +191,19 @@ class Control:
     # execute one substep
     def substep(self):
         # uses a modulo 5 counter
-        if self.substep_counter == 0:
+        if self.clock == 0:
             self.fetch()
-        elif self.substep_counter == 1:
+        elif self.clock == 1:
             self.decode()
-        elif self.substep_counter == 2:
+        elif self.clock == 2:
             self.execute()
-        elif self.substep_counter == 3:
+        elif self.clock == 3:
             self.memory_access()
-        elif self.substep_counter == 4:
+        elif self.clock == 4:
             self.register_update()
         # update counter
-        self.substep_counter += 1
-        self.substep_counter %= 5
+        self.clock += 1
+        self.clock %= 5
 
     # process one instruction, or if part of it is processed finish processing
     def step(self):
@@ -211,7 +213,7 @@ class Control:
         for _ in range(5):
             self.substep()
             # break if instruction finished early (some steps already executed)
-            if self.substep_counter == 0:
+            if self.clock == 0:
                 break
 
     # load a .mc file
