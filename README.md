@@ -71,6 +71,7 @@ RISC-V-Simulator
  - IAG.py
  - README.md
  - control.py
+ - gui.py
  - memory.py
  - register.py
  - main.py
