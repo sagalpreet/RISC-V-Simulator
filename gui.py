@@ -178,7 +178,7 @@ class leftPane:
         control.run()
         pc = control.iag.PC
         register = control.reg.register
-        memory = control.pmi.memory._ByteAddressableMemory__byteData
+        memory = control.pmi.memory.byteData
         self.win.update(pc, register, memory)
         return
     
@@ -187,7 +187,7 @@ class leftPane:
         control.step()
         pc = control.iag.PC
         register = control.reg.register
-        memory = control.pmi.memory._ByteAddressableMemory__byteData
+        memory = control.pmi.memory.byteData
         self.win.update(pc, register, memory)
         return
     
@@ -196,7 +196,7 @@ class leftPane:
         control.substep()
         pc = control.iag.PC
         register = control.reg.register
-        memory = control.pmi.memory._ByteAddressableMemory__byteData
+        memory = control.pmi.memory.byteData
         self.win.update(pc, register, memory)
         return
 
@@ -361,7 +361,7 @@ class bottomPane:
             control = win.control
             pc = control.iag.PC
             register = control.reg.register
-            memory = control.pmi.memory._ByteAddressableMemory__byteData
+            memory = control.pmi.memory.byteData
             win.update(pc, register, memory)
             
         except:
