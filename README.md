@@ -1,7 +1,7 @@
 # RISC-V Simulator
 ##### _An application to simulate the execution of machine code in RISC-V ISA_
 #
-#
+
 ```
 Contributors:
 Aayush Sabharwal :- 2019CSB1060
@@ -10,9 +10,9 @@ Sagalpreet Singh :- 2019CSB1113
 Uday Gupta       :- 2019CSB1127
 Amritanshu Rai   :- 2019EEB1140
 ```
-
+#
 RISC-V is an open standard instruction set architecture based on established reduced instruction set computer principles. The RISC-V ISA is provided under open source licenses that do not require fees to use.
-
+#
 *RISC-V Simulator* is an application that can simulate the execution of machine code by showing the changes that occur in the memory and registers and the flow of data during runtime.
 
 - The current version supports the simulation for *32 bit* machine only.
