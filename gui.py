@@ -322,6 +322,9 @@ class bottomPane:
         loadButton = ttk.Button(parent, text='LOAD', command=self.load)
         loadButton.grid(row=0, column=1, sticky='news')
 
+        dumpButton = ttk.Button(parent, text='DUMP', command=self.dump)
+        dumpButton.grid(row=0, column=2, sticky='news')
+
     def setFileNameLabel(self, filename):
         self.filenameLabel['text'] = filename
 
@@ -364,3 +367,9 @@ class bottomPane:
         except:
             print("Error Reading Instructions and Memory Values")
         return
+
+    def dump(self):
+        try:
+            self.win.control.dump()
+        except:
+            return
