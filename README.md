@@ -55,6 +55,13 @@ UJ format - jal
 - At each instruction, current instruction and corresponding PC is highlighted.
 - Any change made in register module is also highlighted.
 
+### Input File Format
+- Create a file with *.mc* extension that contains the machine code.
+- The file starts with text segment followed by data segment.
+- Assume that text segment (code) starts at *0x00000000* and data segment starts at *0x10000000*, stack segment at *0x7FFFFFFC* and heap segment at *0x10007FE8*.
+- The last instruction of text segment (code) must be *0xFFFFFFFF* as this marks the end of program.
+- Infinite recursion will crash the application.
+
 ### Dependencies
 - Python 3
 - Tkinter (GUI)
