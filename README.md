@@ -64,6 +64,27 @@ UJ format - jal
 - The last instruction of text segment (code) must be *0xFFFFFFFF* as this marks the end of program.
 - Infinite recursion will crash the application.
 
+### Console Output Format
+The simulator also prints messages for each stage to the console. The format is described below:
+- Each stage starts by printing the name of the stage, e.g. at the beginning of decode stage “DECODE” is printed
+- All logged data inside a stage is indented. 
+- Any time memory is read or written to, PMI module will log “Reading <<Datatype>> from memory location <<MAR>>” or “Writing <<Datatype>> <<MDR>> to memory location <<MAR>>” where <<Datatype>> is byte, halfword or word, <<MDR>> is MDR in hex, and <<MAR>> is MAR in hex
+1. *FETCH stage*
+        - PMI prints its message, then it will print “IR: <<IR>>” where <<IR>> is the value of the IR in hex
+#
+2. *DECODE stage*
+        - First values of opcode, rd, funct3, rs1, rs2 and funct7 will be printed in that order. This is irrespective of whether the instruction type has those fields, since they are at a fixed location for all instructions. Next, in decode stage, it will print “<<X>> format detected” where <<X>> is the format of instruction that was detected based on opcode (R/I/S/SB/U/UJ). After that, immediate field is printed in hex for all instructions except R format. Lastly, the following control signals are printed: alu.muxA, alu.muxB, alu.aluOp, alu.muxY, branch, jump, reg_write, mem_read, mem_write
+#
+3. *EXECUTE stage*
+        - Register module prints “Reading registers” followed by the values of the registers read to A and B. After this, ALU prints its input operands operand1 and operand2, followed by register RM. If alu.aluOp is 3, it prints “No operation: exiting”. Otherwise, it prints the value of RZ register, alu.zero control signal, and whether alu.zero was inverted respectively.
+#
+4. *MEMORY ACCESS stage*
+        - First PMI module prints a message as described before, if any data is read from or written to memory. After that, ALU prints the value of RY register. Then, IAG prints message corresponding to how the PC was updated.
+#
+5. *REGISTER UPDATE stage*
+        - If any register is written to, register module prints “Writing value <<RY>> to register x<<RD>>” where <<RY>> is RY in hex, and <<RD>> is RD in decimal
+#
+
 ### Dependencies
 - Python 3
 - Tkinter (GUI)
