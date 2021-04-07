@@ -85,7 +85,7 @@ class ByteAddressableMemory:
 
     def __init__(self, wordSizeInBytes: int, maxAddress:int=None, defaultWordValue:int=0x00000000):
         assert wordSizeInBytes>0, "Word size must be positive"
-        self.__byteData = {}
+        self.byteData = {}
         self.__maxAddress = maxAddress
         self.__defaultValue = defaultWordValue
         self.__wordSizeInBytes = wordSizeInBytes
@@ -114,7 +114,7 @@ class ByteAddressableMemory:
         assert self.__isValidAddress(address), f'Address {hex(address)} is not valid'
         assert self.__isValidAddress(address+sizeInBytes-1), f'Not enough bytes in memory to read'
         assert sizeInBytes>0, f'Size of value must be a positive integer'
-        valueBytes = [self.__byteData.get(address+i, self.__defaultValue) for i in range(sizeInBytes)]
+        valueBytes = [self.byteData.get(address+i, self.__defaultValue) for i in range(sizeInBytes)]
         value = sum([byte<<(i*8) for i, byte in enumerate(valueBytes)])
         return value
 
@@ -126,7 +126,7 @@ class ByteAddressableMemory:
         for i in range(sizeInBytes):
             byteMask = 0xff<<(i*8)
             byte = (value & byteMask)>>(i*8)
-            self.__byteData[address+i] = byte
+            self.byteData[address+i] = byte
 
     def getByteAtAddress(self, address: int) -> int:
         """
