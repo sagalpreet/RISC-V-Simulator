@@ -15,6 +15,9 @@ class Control:
         self.PC_Temp = 0
         self.substep_counter = 0
 
+        # input file
+        self.file = ""
+
     # reset control to initial values
     def reset(self):
         self.iag = IAG.IAG(0)
@@ -202,6 +205,8 @@ class Control:
 
     # process one instruction, or if part of it is processed finish processing
     def step(self):
+        if self.IR == TERMINATION_CODE:
+            return
         # one instruction involves all 5 substeps
         for _ in range(5):
             self.substep()
@@ -211,6 +216,7 @@ class Control:
 
     # load a .mc file
     def load(self, file):
+        self.file = file
         with open(file, 'r') as infile:
                 text = True
                 for line in infile:
@@ -222,6 +228,21 @@ class Control:
                         
                     if instr == TERMINATION_CODE:
                         text = False
+    
+    # dump memory to file
+    def dump(self):
+        with open(self.file[:-3]+'_out.mc', 'w') as file:
+            word = 0
+            addr = 0
+            while word != TERMINATION_CODE:
+                word = self.pmi.memory.getWordAtAddress(addr)
+                file.write(f"0x{addr:X} 0x{word:08X}\n")
+                addr += 4
+            
+            for k, v in self.pmi.memory.byteData.items():
+                if k <= addr:
+                    continue
+                file.write(f"0x{k:X} 0x{v:X}\n")
 
     # run the entire program
     def run(self):
