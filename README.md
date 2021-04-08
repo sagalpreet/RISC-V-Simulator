@@ -52,7 +52,7 @@ UJ format - jal
 - **Next Instruction** button would execute the current instruction and take you to the next instruction.
 - **Next Substep** would execute the next substep (Fetch, Decode, Execute, Memory Access or Register Update) of the current instruction.
 - At the end of execution the **PC** turns red.
-- At each instruction, current instruction and corresponding PC is highlighted.
+- At each instruction, current corresponding to current value of PC is highlighted.
 - Any change made in register module is also highlighted.
 - Only the *Open* option of menubar is functional as of now, other options will be made functional as and when required in the subsequent phases of the project.
 - Clicking the **Dump** button will dump the memory file into *filename_out.mc* (filename is the input file) which will be created in the same location as the input file.
