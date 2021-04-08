@@ -5,7 +5,7 @@
 ```
 Contributors:
 Aayush Sabharwal :- 2019CSB1060
-Aman Palariya    :- 2019CSB1060
+Aman Palariya    :- 2019CSB1068
 Sagalpreet Singh :- 2019CSB1113
 Uday Gupta       :- 2019CSB1127
 Amritanshu Rai   :- 2019EEB1140
