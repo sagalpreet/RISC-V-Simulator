@@ -135,6 +135,39 @@ class Control:
             self.buffers[0].muxY = 0           # irrelevant output
             self.buffers[0].branch = 1              # branch
             self.buffers[0].jump = 0                # don't jump
+            
+            
+            # for SB format (branch instructions) comparison operation of execute stage is done in execute stage itself
+            signed_rs1 = self.buffers[0].rs1
+            if (signed_rs1>>31)&1 == 1:
+                signed_rs1 = -((signed_rs1^((1<<32)-1)) + 1)
+            signed_rs2 = self.buffers[0].rs2
+            if (signed_rs2>>31)&1 == 1:
+                signed_rs2 = -((signed_rs2^((1<<32)-1)) + 1)
+        
+            op1 = signed_rs1
+            op2 = signed_rs2
+            
+            if self.buffers[0].funct3&4 == 0:   # beq or bne                        
+                self.buffers[0].rz = op1 - op2
+                self.buffers[0].inv_zero = self.buffers[0].funct3&1 # invert zero if bne
+                self.buffers[0].zero = self.buffers[0].rz == 0         
+                
+                if self.buffers[0].inv_zero:
+                    self.buffers[0].zero = not(self.buffers[0].zero)
+                    
+            else:             # blt or bge
+                self.buffers[0].rz =int(op1 < op2)
+                self.buffers[0].inv_zero = 1-self.buffers[0].funct3&1   # invert zero if blt
+                self.buffers[0].zero = self.buffers[0].rz == 0
+                
+                if self.buffers[0].inv_zero:
+                    self.buffers[0].zero = not(self.buffers[0].zero)
+            self.iag.PCSrc = self.buffers[0].zero & self.buffers[0].branch | ((self.buffers[0].branch & self.buffers[0].jump)<<1)
+            # Update PC. This is done here since its value no longer depends on output of ALU
+            self.iag.update(self.buffers[0].imm, self.buffers[0].rz)
+            
+            
         elif self.buffers[0].opcode in [0b0110111, 0b0010111]:    # U format
             print("\tU format detected")
             self.buffers[0].imm = ((1<<32) - (1<<12)) & self.buffers[0].IR
