@@ -4,27 +4,23 @@
     
 """
 
-class buffer_module:
-    def __init__(self):
-        self.data = {}
-        
-        # written to the if_id_buffer after the instruction fetch stage
-        self.data['PC'] = ''  
-        
-        # written to the id_ex_buffer after the instruction decode stage
-        self.data['rs1'] = ''
-        self.data['rs2'] = ''
-        self.data['imm'] = ''
-        
-        # written to the ex_mem_buffer after the instruction execute stage
-        self.data['RZ'] = ''
-        
-        # written to the mem_wb_buffer after the memory  stage
-        self.data['RY'] = ''        
-        
-        
-        
-        
+class buffer(dict):
+    def __getattr__(self, attr):
+        return self.get(attr)
+
+    def __setattr__(self, key, value):
+        self.__setitem__(key, value)
+
+    def __setitem__(self, key, value):
+        super(buffer, self).__setitem__(key, value)
+        self.__dict__.update({key: value})
+
+    def __delattr__(self, item):
+        self.__delitem__(item)
+
+    def __delitem__(self, key):
+        super(buffer, self).__delitem__(key)
+        del self.__dict__[key]
 
 
 # sample buffer objects

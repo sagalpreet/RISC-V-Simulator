@@ -1,4 +1,5 @@
 import ALU, IAG, memory, register
+from buffer import buffer
 
 TERMINATION_CODE = 0xFFFFFFFF
 class Control:
@@ -7,12 +8,15 @@ class Control:
         self.iag = IAG.IAG(0)
         self.alu = ALU.ALU()
         self.pmi = memory.ProcessorMemoryInterface(4)
+        self.i_pmi = memory.ProcessorMemoryInterface(4) # instruction memory
         self.reg = register.register_module()
 
         # fields and some controls
-        self.IR = self.opcode = self.imm = self.funct3 = self.funct7 = 0
-        self.branch = self.jump = 0
+        self.IR = 0
         self.PC_Temp = 0
+
+        self.buffers = [buffer(), buffer(), buffer(), buffer()]
+        self.stages = []
 
         # modulo 5 clock for substeps
         self.clock = 0
@@ -25,11 +29,13 @@ class Control:
         self.iag = IAG.IAG(0)
         self.alu = ALU.ALU()
         self.pmi = memory.ProcessorMemoryInterface(4)
+        self.i_pmi = memory.ProcessorMemoryInterface(4)
         self.reg = register.register_module()
+        self.buffers = [buffer(), buffer(), buffer(), buffer()]
+        self.stages = [1]
 
         # global variables
-        self.IR = self.opcode = self.imm = self.funct3 = self.funct7 = 0
-        self.branch = self.jump = 0
+        self.IR = 0
         self.PC_Temp = 0
         self.clock = 0
 
@@ -37,173 +43,195 @@ class Control:
     def fetch(self):
         print("FETCH")
         # read memory
-        self.pmi.mem_read = True
+        self.i_pmi.mem_read = True
         # read a word
-        self.pmi.dataType = 2
+        self.i_pmi.dataType = 2
         # set MAR to PC
-        self.pmi.update(self.alu.rz, self.iag.PC, self.alu.rm, 1)
+        self.i_pmi.update(self.alu.rz, self.iag.PC, self.alu.rm, 1)
         # get instruction corresponding to PC
-        self.IR = self.pmi.getMDR()
+        self.IR = self.i_pmi.getMDR()
         print(f"\tIR: 0x{self.IR:08x}")
         self.PC_Temp = self.iag.PC
+        self.iag.PC += 4
 
     def decode(self):
         # extract common fields. Not all of these are applicable to all instructions
         # but are extracted nonetheless, and used where necessary
-        self.opcode = ((1<<7) - 1) & self.IR
-        self.reg.rd = (((1<<12) - (1<<7)) & self.IR)>>7
-        self.funct3 = (((1<<15) - (1<<12)) & self.IR)>>12
-        self.reg.rs1 = (((1<<20) - (1<<15)) & self.IR)>>15
-        self.reg.rs2 = (((1<<25) - (1<<20)) & self.IR)>>20
-        self.funct7 = (((1<<32) - (1<<25)) & self.IR)>>25
+        self.buffers[0].opcode = ((1<<7) - 1) & self.buffers[0].IR
+        self.buffers[0].rd = (((1<<12) - (1<<7)) & self.buffers[0].IR)>>7
+        self.buffers[0].funct3 = (((1<<15) - (1<<12)) & self.buffers[0].IR)>>12
+        self.buffers[0].rs1 = (((1<<20) - (1<<15)) & self.buffers[0].IR)>>15
+        self.buffers[0].rs2 = (((1<<25) - (1<<20)) & self.buffers[0].IR)>>20
+        self.buffers[0].funct7 = (((1<<32) - (1<<25)) & self.buffers[0].IR)>>25
         print("DECODE")
-        print(f"\tOpcode: 0b{self.opcode:07b}")
-        print(f"\trd: 0b{self.reg.rd:05b}")
-        print(f"\tfunct3: 0b{self.funct3:03b}")
-        print(f"\trs1: 0b{self.reg.rs1:05b}")
-        print(f"\trs2: 0b{self.reg.rs2:05b}")
-        print(f"\tfunct7: 0b{self.funct7:07b}")
+        print(f"\tOpcode: 0b{self.buffers[0].opcode:07b}")
+        print(f"\trd: 0b{self.buffers[0].rd:05b}")
+        print(f"\tfunct3: 0b{self.buffers[0].funct3:03b}")
+        print(f"\trs1: 0b{self.buffers[0].rs1:05b}")
+        print(f"\trs2: 0b{self.buffers[0].rs2:05b}")
+        print(f"\tfunct7: 0b{self.buffers[0].funct7:07b}")
 
-        if self.opcode == 0b0110011: # R format
-            print("\tR format detected")
-            self.imm = 0         # immediate unnecessary
-            self.alu.muxA = 0    # use rs1
-            self.alu.muxB = 0    # use rs2
-            self.alu.aluOp = 2   # determine operation with funct3 and funct7
-            self.alu.muxY = 0    # output is output of ALU
-            self.branch = 0      # don't branch
-            self.jump = 0        # don't jump
-            self.reg.reg_write = True    # write to register
-        elif self.opcode == 0b0010011 or self.opcode == 0b0000011 or self.opcode == 0b1100111: # I format
-            print("\tI format detected")
-            self.imm = (((1<<32) - (1<<20)) & self.IR) >> 20 
-            if (self.imm>>11)&1 == 1:            # check if sign bit is 1
-                self.imm = -((self.imm ^ ((1<<12)-1)) + 1)
-            print(f"\timmediate: {self.imm:03x}")
-            self.alu.muxA = 0            # op1 is rs1
-            self.alu.muxB = 1            # op2 is imm
-            self.reg.reg_write = True    # write to register
-            self.jump = 0                # don't jump
-            self.branch = 0              # don't branch
-            if self.opcode == 0b0010011: # arithmetic I format
-                self.alu.aluOp = 2       # determine operation with funct3 and funct7
-                self.alu.muxY = 0        # output is output of ALU
-            else:                   # load or jalr
-                self.alu.aluOp = 0       # add
-                if self.opcode == 0b0000011:     # load
-                    self.alu.muxY = 1    # output is MDR
-                    self.pmi.dataType = self.funct3   # datatype to read
-                    self.pmi.mem_read = True     # read memory
-                else:                       # jalr
-                    self.branch = 1              # branch
-                    self.jump = 1                # and jump
-                    self.alu.muxY = 2            # output is return address
-        elif self.opcode == 0b0100011: # S format
-            print("\tS format detected")
-            self.imm = ((((1<<32) - (1<<25)) & self.IR) >> 20) + ((((1<<12)-(1<<7)) & self.IR)>>7)
-            if (self.imm>>11)&1 == 1:            # check if sign bit is 1
-                self.imm = -((self.imm^((1<<12)-1)) + 1)
-            print(f"\timmediate: {self.imm:03x}")
-            self.alu.muxA = 0            # op1 is rs1
-            self.alu.muxB = 1            # op2 is imm
-            self.alu.aluOp = 0           # add
-            self.alu.muxY = 0           # output is irrelevant
-            self.pmi.mem_write = True    # write to memory
-            self.pmi.dataType = self.funct3   # datatype to write
-            self.branch = 0              # don't branch
-            self.jump = 0                # don't jump
-        elif self.opcode == 0b1100011: # SB format
-            print("\tSB format detected")
-            self.imm = (((1<<31) & self.IR) >> 19) + (((1<<7) & self.IR) << 4) + ((((1<<31) - (1<<25)) & self.IR)>>20) + ((((1<<12) - (1<<8))&self.IR)>>7)
-            if (self.imm>>12)&1 == 1:            # check if sign bit is 1
-                self.imm = -((self.imm^((1<<13)-1)) + 1)
-            print(f"\timmediate: {self.imm:04x}")
-            self.alu.muxA = 0            # op1 is rs1
-            self.alu.muxB = 0            # op2 is rs2
-            self.alu.aluOp = 1           # determine branch operation by funct3
-            self.alu.muxY = 0           # irrelevant output
-            self.branch = 1              # branch
-            self.jump = 0                # don't jump
-        elif self.opcode == 0b0110111 or self.opcode == 0b0010111:    # U format
-            print("\tU format detected")
-            self.imm = ((1<<32) - (1<<12)) & self.IR
-            print(f"\timmediate: {self.imm:05x}")
-            if self.opcode == 0b0010111: # if auipc
-                self.alu.muxA = 1        # op1 is PC
-            else:                   # if lui
-                self.alu.muxA = 0        # op1 is rs1
-            self.alu.muxB = 1            # op2 is rs2
-            self.alu.aluOp = 0           # add
-            self.reg.reg_write = True    # write to register
-            self.alu.muxY = 0            # output is ALU
-            self.branch = 0              # don't branch
-            self.jump = 0                # don't jump
-        elif self.opcode == 0b1101111:   # UJ format
-            print("\tUJ format detected")
-            self.imm = (((1<<31) & self.IR)>>11) + (((1<<20) - (1<<12)) & self.IR) + (((1<<20) & self.IR)>>9) + ((((1<<31) - (1<<21)) & self.IR)>>20)
-            if (self.imm>>20)&1 == 1:            # check if sign bit is 1
-                self.imm = -((self.imm^((1<<21)-1)) + 1)
-            print(f"\timmediate: {self.imm:06x}")
-            self.alu.muxA = 0            # op1 is rs1
-            self.alu.muxB = 0            # op2 is rs2
-            self.reg.reg_write = True    # write to register
-            self.alu.aluOp = 3          # no operation
-            self.alu.muxY = 2            # output is return address
-            self.branch = 1              # branch
-            self.jump = 0                # don't jump
+        # defaults
+        self.buffers[0].mem_read = False
+        self.buffers[0].mem_write = False
         
-        print(f"\talu.muxA: 0b{self.alu.muxA}")
-        print(f"\talu.muxB: 0b{self.alu.muxB}")
-        print(f"\talu.aluOp: 0b{self.alu.aluOp}")
-        print(f"\talu.muxY: 0b{self.alu.muxY}")
-        print(f"\tbranch: 0b{self.branch}")
-        print(f"\tjump: 0b{self.jump}")
-        print(f"\treg_write: {self.reg.reg_write}")
-        print(f"\tmem_read: {self.pmi.mem_read}")
-        print(f"\tmem_write: {self.pmi.mem_write}")
+        if self.buffers[0].opcode == 0b0110011: # R format
+            print("\tR format detected")
+            self.buffers[0].imm = 0         # immediate unnecessary
+            self.buffers[0].muxA = 0    # use rs1
+            self.buffers[0].muxB = 0    # use rs2
+            self.buffers[0].aluOp = 2   # determine operation with funct3 and funct7
+            self.buffers[0].muxY = 0    # output is output of ALU
+            self.buffers[0].branch = 0      # don't branch
+            self.buffers[0].jump = 0        # don't jump
+            self.buffers[0].reg_write = True    # write to register
+        elif self.buffers[0].opcode in [0b0010011, 0b0000011, 0b1100111]: # I format
+            print("\tI format detected")
+            self.buffers[0].imm = (((1<<32) - (1<<20)) & self.buffers[0].IR) >> 20 
+            if (self.buffers[0].imm>>11)&1 == 1:            # check if sign bit is 1
+                self.buffers[0].imm = -((self.buffers[0].imm ^ ((1<<12)-1)) + 1)
+            print(f"\timmediate: {self.buffers[0].imm:03x}")
+            self.buffers[0].muxA = 0            # op1 is rs1
+            self.buffers[0].muxB = 1            # op2 is imm
+            self.buffers[0].reg_write = True    # write to register
+            self.buffers[0].jump = 0                # don't jump
+            self.buffers[0].branch = 0              # don't branch
+            if self.buffers[0].opcode == 0b0010011: # arithmetic I format
+                self.buffers[0].aluOp = 2       # determine operation with funct3 and funct7
+                self.buffers[0].muxY = 0        # output is output of ALU
+            else:                   # load or jalr
+                self.buffers[0].aluOp = 0       # add
+                if self.buffers[0].opcode == 0b0000011:     # load
+                    self.buffers[0].muxY = 1    # output is MDR
+                    self.buffers[0].dataType = self.buffers[0].funct3   # datatype to read
+                    self.buffers[0].mem_read = True     # read memory
+                else:                       # jalr
+                    self.buffers[0].branch = 1              # branch
+                    self.buffers[0].jump = 1                # and jump
+                    self.buffers[0].muxY = 2            # output is return address
+        elif self.buffers[0].opcode == 0b0100011: # S format
+            print("\tS format detected")
+            self.buffers[0].imm = ((((1<<32) - (1<<25)) & self.buffers[0].IR) >> 20) + ((((1<<12)-(1<<7)) & self.buffers[0].IR)>>7)
+            if (self.buffers[0].imm>>11)&1 == 1:            # check if sign bit is 1
+                self.buffers[0].imm = -((self.buffers[0].imm^((1<<12)-1)) + 1)
+            print(f"\timmediate: {self.buffers[0].imm:03x}")
+            self.buffers[0].muxA = 0            # op1 is rs1
+            self.buffers[0].muxB = 1            # op2 is imm
+            self.buffers[0].aluOp = 0           # add
+            self.buffers[0].muxY = 0           # output is irrelevant
+            self.buffers[0].mem_write = True    # write to memory
+            self.buffers[0].dataType = self.buffers[0].funct3   # datatype to write
+            self.buffers[0].branch = 0              # don't branch
+            self.buffers[0].jump = 0                # don't jump
+        elif self.buffers[0].opcode == 0b1100011: # SB format
+            print("\tSB format detected")
+            self.buffers[0].imm = (((1<<31) & self.buffers[0].IR) >> 19) + (((1<<7) & self.buffers[0].IR) << 4) + ((((1<<31) - (1<<25)) & self.buffers[0].IR)>>20) + ((((1<<12) - (1<<8))&self.buffers[0].IR)>>7)
+            if (self.buffers[0].imm>>12)&1 == 1:            # check if sign bit is 1
+                self.buffers[0].imm = -((self.buffers[0].imm^((1<<13)-1)) + 1)
+            print(f"\timmediate: {self.buffers[0].imm:04x}")
+            self.buffers[0].muxA = 0            # op1 is rs1
+            self.buffers[0].muxB = 0            # op2 is rs2
+            self.buffers[0].aluOp = 1           # determine branch operation by funct3
+            self.buffers[0].muxY = 0           # irrelevant output
+            self.buffers[0].branch = 1              # branch
+            self.buffers[0].jump = 0                # don't jump
+        elif self.buffers[0].opcode in [0b0110111, 0b0010111]:    # U format
+            print("\tU format detected")
+            self.buffers[0].imm = ((1<<32) - (1<<12)) & self.buffers[0].IR
+            print(f"\timmediate: {self.buffers[0].imm:05x}")
+            if self.buffers[0].opcode == 0b0010111: # if auipc
+                self.buffers[0].muxA = 1        # op1 is PC
+            else:                   # if lui
+                self.buffers[0].muxA = 0        # op1 is rs1
+            self.buffers[0].muxB = 1            # op2 is rs2
+            self.buffers[0].aluOp = 0           # add
+            self.buffers[0].reg_write = True    # write to register
+            self.buffers[0].muxY = 0            # output is ALU
+            self.buffers[0].branch = 0              # don't branch
+            self.buffers[0].jump = 0                # don't jump
+        elif self.buffers[0].opcode == 0b1101111:   # UJ format
+            print("\tUJ format detected")
+            self.buffers[0].imm = (((1<<31) & self.buffers[0].IR)>>11) + (((1<<20) - (1<<12)) & self.buffers[0].IR) + (((1<<20) & self.buffers[0].IR)>>9) + ((((1<<31) - (1<<21)) & self.buffers[0].IR)>>20)
+            if (self.buffers[0].imm>>20)&1 == 1:            # check if sign bit is 1
+                self.buffers[0].imm = -((self.buffers[0].imm^((1<<21)-1)) + 1)
+            print(f"\timmediate: {self.buffers[0].imm:06x}")
+            self.buffers[0].muxA = 0            # op1 is rs1
+            self.buffers[0].muxB = 0            # op2 is rs2
+            self.buffers[0].reg_write = True    # write to register
+            self.buffers[0].aluOp = 3          # no operation
+            self.buffers[0].muxY = 2            # output is return address
+            self.buffers[0].branch = 1              # branch
+            self.buffers[0].jump = 0                # don't jump
+        
+        print(f"\talu.muxA: 0b{self.buffers[0].muxA}")
+        print(f"\talu.muxB: 0b{self.buffers[0].muxB}")
+        print(f"\talu.aluOp: 0b{self.buffers[0].aluOp}")
+        print(f"\talu.muxY: 0b{self.buffers[0].muxY}")
+        print(f"\tbranch: 0b{self.buffers[0].branch}")
+        print(f"\tjump: 0b{self.buffers[0].jump}")
+        print(f"\treg_write: {self.buffers[0].reg_write}")
+        print(f"\tmem_read: {self.buffers[0].mem_read}")
+        print(f"\tmem_write: {self.buffers[0].mem_write}")
 
     def execute(self):
         print("EXECUTE")
+        self.reg.rs1 = self.buffers[1].rs1
+        self.reg.rs2 = self.buffers[1].rs2
         self.reg.read_register()
         # execute any ALU operation
-        self.alu.execute(self.reg.read_data_1, self.reg.read_data_2, self.imm, self.funct3, self.funct7, self.iag.PC)
+        self.alu.muxA = self.buffers[1].muxA
+        self.alu.muxB = self.buffers[1].muxB
+        self.alu.aluOp = self.buffers[1].aluOp
+        self.alu.execute(self.reg.read_data_1, self.reg.read_data_2, self.buffers[1].imm, self.buffers[1].funct3, self.buffers[1].funct7, self.buffers[1].PC_Temp)
+        self.buffers[1].zero = self.alu.zero
+        self.buffers[1].rm = self.alu.rm
+        self.buffers[1].rz = self.alu.rz
 
     def memory_access(self):
         print("MEMORY ACCESS")
+        self.pmi.mem_read = self.buffers[2].mem_read
+        self.pmi.mem_write = self.buffers[2].mem_write
+        self.pmi.dataType = self.buffers[2].dataType
         # access memory
-        self.pmi.update(self.alu.rz, self.iag.PC, self.alu.rm, 0)
+        self.pmi.update(self.buffers[2].rz, self.buffers[2].PC_Temp, self.buffers[2].rm, 0)
         # this runs muxY and processes final output that goes to register file
-        self.alu.process_output(self.pmi.getMDR(), self.iag.PC+4)
+        self.alu.process_output(self.pmi.getMDR(), self.buffers[2].PC_Temp+4)
+        self.buffers[2].ry = self.alu.ry
         # branch control bits for IAG. If LSB is 1, it's a branch instruction. MSB is only 1 for jalr
-        self.iag.PCSrc = self.alu.zero & self.branch | ((self.branch & self.jump)<<1)
+        self.iag.PCSrc = self.buffers[2].zero & self.buffers[2].branch | ((self.buffers[2].branch & self.buffers[2].jump)<<1)
         # Update PC. This is done here since its value depends on output of ALU
-        self.iag.update(self.imm, self.alu.rz)
+        self.iag.update(self.buffers[2].imm, self.buffers[2].rz)
 
     # writeback stage
     def register_update(self):
         print("REGISTER UPDATE")
         # data to write
-        self.reg.write_data = self.alu.ry
-        # update register. This only writes if self.reg.mem_write was set to True
+        self.reg.write_data = self.buffers[3].ry
+        self.reg.reg_write = self.buffers[3].reg_write
+        # update register. This only writes if self.reg.reg_write was set to True
         self.reg.register_update()
         print("\n")
     
     # execute one substep
     def substep(self):
-        # uses a modulo 5 counter
-        if self.clock == 0:
+        if 1 in self.stages:
             self.fetch()
-        elif self.clock == 1:
+        if 2 in self.stages:
             self.decode()
-        elif self.clock == 2:
+        if 3 in self.stages:
             self.execute()
-        elif self.clock == 3:
+        if 4 in self.stages:
             self.memory_access()
-        elif self.clock == 4:
+        if 5 in self.stages:
             self.register_update()
+        
+        self.buffers = [buffer()] + self.buffers[:-1]
+        self.buffers[0].IR = self.IR
+        self.buffers[0].PC_Temp = self.PC_Temp
+
+        self.stages = [1] + [x+1 for x in self.stages]
         # update counter
         self.clock += 1
-        self.clock %= 5
 
     # process one instruction, or if part of it is processed finish processing
     def step(self):
@@ -224,7 +252,7 @@ class Control:
                 for line in infile:
                     mloc, instr = [int(x, 16) for x in line.split()]
                     if text:
-                        self.pmi.memory.setWordAtAddress(mloc, instr)
+                        self.i_pmi.memory.setWordAtAddress(mloc, instr)
                     else:
                         self.pmi.memory.setByteAtAddress(mloc, instr)
                         
