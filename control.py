@@ -77,6 +77,7 @@ class Control:
         
         if self.buffers[0].opcode == 0b0110011: # R format
             print("\tR format detected")
+            self.buffers[0].type = 'R'
             self.buffers[0].imm = 0         # immediate unnecessary
             self.buffers[0].muxA = 0    # use rs1
             self.buffers[0].muxB = 0    # use rs2
@@ -87,6 +88,7 @@ class Control:
             self.buffers[0].reg_write = True    # write to register
         elif self.buffers[0].opcode in [0b0010011, 0b0000011, 0b1100111]: # I format
             print("\tI format detected")
+            self.buffers[0].type = 'I'
             self.buffers[0].imm = (((1<<32) - (1<<20)) & self.buffers[0].IR) >> 20 
             if (self.buffers[0].imm>>11)&1 == 1:            # check if sign bit is 1
                 self.buffers[0].imm = -((self.buffers[0].imm ^ ((1<<12)-1)) + 1)
@@ -102,6 +104,7 @@ class Control:
             else:                   # load or jalr
                 self.buffers[0].aluOp = 0       # add
                 if self.buffers[0].opcode == 0b0000011:     # load
+                    self.buffers[0].type = 'L'
                     self.buffers[0].muxY = 1    # output is MDR
                     self.buffers[0].dataType = self.buffers[0].funct3   # datatype to read
                     self.buffers[0].mem_read = True     # read memory
@@ -111,6 +114,7 @@ class Control:
                     self.buffers[0].muxY = 2            # output is return address
         elif self.buffers[0].opcode == 0b0100011: # S format
             print("\tS format detected")
+            self.buffers[0].type = 'S'
             self.buffers[0].imm = ((((1<<32) - (1<<25)) & self.buffers[0].IR) >> 20) + ((((1<<12)-(1<<7)) & self.buffers[0].IR)>>7)
             if (self.buffers[0].imm>>11)&1 == 1:            # check if sign bit is 1
                 self.buffers[0].imm = -((self.buffers[0].imm^((1<<12)-1)) + 1)
@@ -125,6 +129,7 @@ class Control:
             self.buffers[0].jump = 0                # don't jump
         elif self.buffers[0].opcode == 0b1100011: # SB format
             print("\tSB format detected")
+            self.buffers[0].type = 'SB'
             self.buffers[0].imm = (((1<<31) & self.buffers[0].IR) >> 19) + (((1<<7) & self.buffers[0].IR) << 4) + ((((1<<31) - (1<<25)) & self.buffers[0].IR)>>20) + ((((1<<12) - (1<<8))&self.buffers[0].IR)>>7)
             if (self.buffers[0].imm>>12)&1 == 1:            # check if sign bit is 1
                 self.buffers[0].imm = -((self.buffers[0].imm^((1<<13)-1)) + 1)
@@ -170,6 +175,7 @@ class Control:
             
         elif self.buffers[0].opcode in [0b0110111, 0b0010111]:    # U format
             print("\tU format detected")
+            self.buffers[0].type = 'U'
             self.buffers[0].imm = ((1<<32) - (1<<12)) & self.buffers[0].IR
             print(f"\timmediate: {self.buffers[0].imm:05x}")
             if self.buffers[0].opcode == 0b0010111: # if auipc
@@ -184,6 +190,7 @@ class Control:
             self.buffers[0].jump = 0                # don't jump
         elif self.buffers[0].opcode == 0b1101111:   # UJ format
             print("\tUJ format detected")
+            self.buffers[0].type = 'UJ'
             self.buffers[0].imm = (((1<<31) & self.buffers[0].IR)>>11) + (((1<<20) - (1<<12)) & self.buffers[0].IR) + (((1<<20) & self.buffers[0].IR)>>9) + ((((1<<31) - (1<<21)) & self.buffers[0].IR)>>20)
             if (self.buffers[0].imm>>20)&1 == 1:            # check if sign bit is 1
                 self.buffers[0].imm = -((self.buffers[0].imm^((1<<21)-1)) + 1)
@@ -206,6 +213,22 @@ class Control:
         print(f"\tmem_read: {self.buffers[0].mem_read}")
         print(f"\tmem_write: {self.buffers[0].mem_write}")
 
+    def detectDataHazard(self, type, *args):
+        # RAW conflict detection 
+        conflicts = []
+        if type == 'read':
+          for rs in args:
+              if self.buffers[1].type not in ['S', 'SB'] and  self.buffers[1].rd == rs:
+                conflicts.append([1, rs]) # E to E forwarding
+          for rs in args:
+              if self.buffers[2].type not in ['S', 'SB'] and  self.buffers[2].rd == rs:
+                conflicts.append([2, rs]) # M to E forwarding
+        if type == 'store':
+            for rs in args:
+              if self.buffers[1].type == 'L' and self.buffers[1].rd == rs:
+                conflicts.append([3, rs]) # M to M forwarding
+        return conflicts
+        
     def execute(self):
         print("EXECUTE")
         self.reg.rs1 = self.buffers[1].rs1
