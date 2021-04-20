@@ -137,11 +137,17 @@ class Control:
             self.buffers[0].jump = 0                # don't jump
             
             
-            # for SB format (branch instructions) comparison operation of execute stage is done in execute stage itself
-            signed_rs1 = self.buffers[0].rs1
+            # for SB format (branch instructions) comparison operation of execute stage is done in decode stage itself
+            self.reg.rs1 = self.buffers[0].rs1
+            self.reg.rs2 = self.buffers[0].rs2
+            self.reg.read_register()            
+            self.buffers[0].rs1_data = self.reg.read_data_1
+            self.buffers[0].rs2_data = self.reg.read_data_2
+            
+            signed_rs1 = self.buffers[0].rs1_data
             if (signed_rs1>>31)&1 == 1:
                 signed_rs1 = -((signed_rs1^((1<<32)-1)) + 1)
-            signed_rs2 = self.buffers[0].rs2
+            signed_rs2 = self.buffers[0].rs2_data
             if (signed_rs2>>31)&1 == 1:
                 signed_rs2 = -((signed_rs2^((1<<32)-1)) + 1)
         
