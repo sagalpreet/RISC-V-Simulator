@@ -294,19 +294,20 @@ class Control:
                         self.buffers[0].muxDA = 1
                 else:
                     self.stall = True
-                return
+                    return
             # M to D in this cycle
             if self.buffers[2].type not in ['SB', 'S'] and self.buffers[2].rd != 0 and self.buffers[2].rd in [self.buffers[0].rs1, self.buffers[0].rs2]:
                 if self.forwarding:
-                    if self.buffers[1].rd == self.buffers[0].rs1:
+                    if self.buffers[2].rd == self.buffers[0].rs1:
                         print("\tForwarding M to D (rs1)")
                         self.buffers[0].muxDA = 2
-                    if self.buffers[1].rd == self.buffers[0].rs2:
+                    if self.buffers[2].rd == self.buffers[0].rs2:
                         print("\tForwarding M to D (rs2)")
                         self.buffers[0].muxDB = 2
                 else:
                     self.stall = True
-                return
+            return
+
         # jalr
         if self.buffers[0].type == 'I' and self.buffers[0].branch == 1:
             # M to D, but in next cycle
@@ -320,7 +321,7 @@ class Control:
                     self.buffers[0].muxDA = 1
                 else:
                     self.stall = True
-                return
+                    return
             # M to D in this cycle
             if self.buffers[2].type not in ['SB', 'S'] and self.buffers[2].rd != 0 and self.buffers[2].rd == self.buffers[0].rs1:
                 if self.forwarding:
@@ -328,7 +329,7 @@ class Control:
                     self.buffers[0].muxDA = 2
                 else:
                     self.stall = True
-                return
+            return
 
         # M to E
         # E to E
@@ -344,7 +345,7 @@ class Control:
                         self.buffers[0].muxB = 3
                 else:
                     self.stall = True
-                return
+                    return
             # E to E
             if self.buffers[1].type in ['R', 'I', 'U'] and self.buffers[1].rd != 0 and self.buffers[1].rd in [self.buffers[0].rs1, self.buffers[0].rs2]:
                 if self.forwarding:
@@ -356,7 +357,7 @@ class Control:
                         self.buffers[0].muxB = 2
                 else:
                     self.stall = True
-                return
+                    return
             
             # M to E (because UJ writes to ry)
             if self.buffers[1].type == 'UJ' and self.buffers[1].rd != 0 and self.buffers[1].rd in [self.buffers[0].rs1, self.buffers[0].rs2]:
@@ -369,7 +370,8 @@ class Control:
                         self.buffers[0].muxB = 3
                 else:
                     self.stall = True
-        
+            return
+
         if self.buffers[0].type == 'I' and self.buffers[0].branch == 0 or self.buffers[0].type == 'L': # I format and not jalr
             # M to E
             if self.buffers[1].type == 'L' and self.buffers[1].rd != 0 and self.buffers[1].rd == self.buffers[0].rs1:
@@ -378,7 +380,7 @@ class Control:
                     self.buffers[0].muxA = 3
                 else:
                     self.stall = True
-                return
+                    return
             # E to E
             if self.buffers[1].type in ['R', 'I', 'U'] and self.buffers[1].rd != 0 and self.buffers[1].rd == self.buffers[0].rs1:
                 if self.forwarding:
@@ -386,8 +388,8 @@ class Control:
                     self.buffers[0].muxA = 2
                 else:
                     self.stall = True
-                return
-            
+                    return
+    
             # M to E (because UJ writes to ry)
             if self.buffers[1].type == 'UJ' and self.buffers[1].rd != 0 and self.buffers[1].rd == self.buffers[0].rs1:
                 if self.forwarding:
@@ -396,7 +398,8 @@ class Control:
                         self.buffers[0].muxA = 3
                 else:
                     self.stall = True
-        
+            return
+
         # M to M
         if self.buffers[0].type == 'S':
             # M to M
@@ -407,7 +410,7 @@ class Control:
                     self.buffers[0].muxRM = 0
                 else:
                     self.stall = True
-                return
+                    return
             # M to E
             if self.buffers[1].type == 'L' and self.buffers[1].rd != 0 and self.buffers[1].rd == self.buffers[0].rs1:
                 if self.forwarding:
@@ -415,7 +418,7 @@ class Control:
                     self.buffers[0].muxA = 3
                 else:
                     self.stall = True
-                return
+                    return
             # E to E
             if self.buffers[1].type in ['R', 'I', 'U'] and self.buffers[1].rd != 0 and self.buffers[1].rd in [self.buffers[0].rs1, self.buffers[0].rs2]:
                 if self.forwarding:
@@ -427,8 +430,7 @@ class Control:
                         self.buffers[0].muxRM = 1
                 else:
                     self.stall = True
-                        # TODO UJ
-                return
+                    return
             
             # M to E|M (because UJ writes to ry)
             if self.buffers[1].type == 'UJ' and self.buffers[1].rd != 0 and self.buffers[1].rd in [self.buffers[0].rs1, self.buffers[0].rs2]:
