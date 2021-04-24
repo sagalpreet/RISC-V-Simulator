@@ -28,6 +28,40 @@ class Control:
 
         # input file
         self.file = ""
+        
+        # stats to be printed        
+        # incremented when removing 5 from the stage list
+        self.num_instructions_executed = 0           
+        
+        # updated when removing 5 from the stage list
+        self.CPI = 0                                 
+        
+        # incremented in decode stage when store or load instruction found and self.stall is false
+        self.num_instructions_data_transfer = 0     
+        
+        # incremented in decode stage when R or ALU type I instruction found and self.stall is false
+        self.num_instructions_alu = 0               
+        
+        # incremented in decode stage when SB, UJ or jalr instruction found and self.stall is false
+        self.num_instructions_control = 0
+        
+        # incremented at the end of decode if self.stall is set to true
+        self.num_stalls = 0
+        
+        # incremented in hazard_detection when self.stall is set to true for the last time for a given instruction
+        self.num_data_hazards = 0
+        
+        # incremented in decode when SB instruction and self.stall is false
+        self.num_control_hazards = 0
+        
+        #
+        self.num_branch_misprediction = 0
+        
+        # incremented in hazard_detection whenever self.stall is set to true since currently stalls are introduced due to data hazards (not sure) 
+        self.num_stalls_data_hazards = 0
+        
+        # not incremented
+        self.num_stalls_control_hazards = 0
 
     # reset control to initial values
     def reset(self):
@@ -46,6 +80,41 @@ class Control:
         self.IR = 0
         self.PC_Temp = 0
         self.clock = 0
+        
+        # stats to be printed        
+        # incremented when removing 5 from the stage list
+        self.num_instructions_executed = 0           
+        
+        # updated when removing 5 from the stage list
+        self.CPI = 0                                 
+        
+        # incremented in decode stage when store or load instruction found and self.stall is false
+        self.num_instructions_data_transfer = 0     
+        
+        # incremented in decode stage when R or ALU type I instruction found and self.stall is false
+        self.num_instructions_alu = 0               
+        
+        # incremented in decode stage when SB, UJ or jalr instruction found and self.stall is false
+        self.num_instructions_control = 0
+        
+        # incremented at the end of decode if self.stall is set to true
+        self.num_stalls = 0
+        
+        # incremented in hazard_detection when self.stall is set to true for the last time for a given instruction
+        self.num_data_hazards = 0
+        
+        # incremented in decode when SB instruction and self.stall is false
+        self.num_control_hazards = 0
+        
+        #
+        self.num_branch_misprediction = 0
+        
+        # incremented in hazard_detection whenever self.stall is set to true since currently stalls are introduced due to data hazards (not sure) 
+        self.num_stalls_data_hazards = 0
+        
+        # not incremented
+        self.num_stalls_control_hazards = 0
+        
 
     # fetch step
     def fetch(self):
@@ -105,6 +174,10 @@ class Control:
             self.buffers[0].jump = 0  # don't jump
             self.buffers[0].reg_write = True  # write to register
             self.detect_data_hazards()
+            ###### stats ######
+            if not self.stall:
+                self.num_instructions_alu += 1
+            ###### stats ######
             
         elif self.buffers[0].opcode in [0b0010011, 0b0000011, 0b1100111]:  # I format
             print("\tI format detected")
@@ -135,7 +208,16 @@ class Control:
                     self.buffers[0].muxY = 2  # output is return address
                     self.buffers[0].muxDA = 0  # use rs1
             self.detect_data_hazards()
-                
+            
+            ###### stats ######
+            if (not self.stall) and (self.buffers[0].opcode == 0b0010011): # arithmetic I format
+                self.num_instructions_alu += 1
+            elif (not self.stall) and (self.buffers[0].opcode == 0b0000011): #load
+                self.num_instructions_data_transfer += 1
+            elif (not self.stall) and (self.buffers[0].opcode == 0b1100111): #jalr
+                self.num_instructions_control += 1
+            ###### stats ######
+        
         elif self.buffers[0].opcode == 0b0100011:  # S format
             print("\tS format detected")
             self.buffers[0].type = 'S'
@@ -153,6 +235,11 @@ class Control:
             self.buffers[0].branch = 0  # don't branch
             self.buffers[0].jump = 0  # don't jump
             self.detect_data_hazards()
+            
+            ###### stats ######
+            if (not self.stall): # store instruction
+                self.num_instructions_data_transfer += 1
+            ###### stats ######
 
         elif self.buffers[0].opcode == 0b1100011:  # SB format
             print("\tSB format detected")
@@ -173,6 +260,12 @@ class Control:
             self.buffers[0].muxDA = 0  # use rs1
             self.buffers[0].muxDB = 0  # use rs2
             self.detect_data_hazards()
+            
+            ###### stats ######
+            if (not self.stall): # branch instructions
+                self.num_instructions_control += 1
+                self.num_control_hazards += 1
+            ###### stats ######
 
         elif self.buffers[0].opcode in [0b0110111, 0b0010111]:  # U format
             print("\tU format detected")
@@ -190,6 +283,11 @@ class Control:
             self.buffers[0].branch = 0  # don't branch
             self.buffers[0].jump = 0  # don't jump
             self.detect_data_hazards()
+            
+            ###### stats ######
+            # it has to be decided if auipc and lui are alu instructions or not
+            ###### stats ######
+            
 
         elif self.buffers[0].opcode == 0b1101111:  # UJ format
             print("\tUJ format detected")
@@ -210,6 +308,11 @@ class Control:
             self.buffers[0].jump = 0  # don't jump
             self.buffers[0].flush = True
             self.detect_data_hazards()
+            
+            ###### stats ######
+            if (not self.stall): # jal instruction
+                self.num_instructions_control += 1
+            ###### stats ######
         else:
             return
         
@@ -262,6 +365,14 @@ class Control:
             self.iag.PCSrc = self.buffers[0].zero & self.buffers[0].branch | ((self.buffers[0].branch & self.buffers[0].jump) << 1)
             # Update PC. This is done here since its value no longer depends on output of ALU
             self.flush = self.iag.update(self.buffers[0].imm + self.buffers[0].PC_Temp, self.buffers[0].rz)
+            
+        ###### stats ######
+        #if (not self.stall):
+            #self.num_instructions_executed += 1
+            #self.num_instructions_executed should be incremented when the 5th stage has been completed for an instruction 
+        if self.stall:
+            self.num_stalls += 1
+        ###### stats ######
 
         print(f"\talu.muxA: 0b{self.buffers[0].muxA}")
         print(f"\talu.muxB: 0b{self.buffers[0].muxB}")
@@ -282,6 +393,9 @@ class Control:
             # M to D, but in next cycle
             if self.buffers[1].type == 'L' and self.buffers[1].rd != 0 and self.buffers[1].rd in [self.buffers[0].rs1, self.buffers[0].rs2]:
                 self.stall = True
+                ###### stats ######
+                self.num_stalls_data_hazards += 1
+                ###### stats ######
                 return
             # E to D
             if self.buffers[1].type in ['R', 'I', 'U', 'UJ'] and self.buffers[1].rd != 0 and self.buffers[1].rd in [self.buffers[0].rs1, self.buffers[0].rs2]:
@@ -294,6 +408,10 @@ class Control:
                         self.buffers[0].muxDA = 1
                 else:
                     self.stall = True
+                    ###### stats ######
+                    self.num_stalls_data_hazards += 1
+                    self.num_data_hazards += 1
+                    ###### stats ######
                     return
             # M to D in this cycle
             if self.buffers[2].type not in ['SB', 'S'] and self.buffers[2].rd != 0 and self.buffers[2].rd in [self.buffers[0].rs1, self.buffers[0].rs2]:
@@ -306,6 +424,10 @@ class Control:
                         self.buffers[0].muxDB = 2
                 else:
                     self.stall = True
+                    ###### stats ######
+                    self.num_stalls_data_hazards += 1
+                    self.num_data_hazards += 1
+                    ###### stats ######
             return
 
         # jalr
@@ -313,6 +435,9 @@ class Control:
             # M to D, but in next cycle
             if self.buffers[1].type == 'L' and self.buffers[1].rd != 0 and self.buffers[1].rd == self.buffers[0].rs1:
                 self.stall = True
+                ###### stats ######
+                self.num_stalls_data_hazards += 1
+                ###### stats ######
                 return
             # E to D
             if self.buffers[1].type in ['R', 'I', 'U', 'UJ'] and self.buffers[1].rd != 0 and self.buffers[1].rd == self.buffers[0].rs1:
@@ -321,6 +446,10 @@ class Control:
                     self.buffers[0].muxDA = 1
                 else:
                     self.stall = True
+                    ###### stats ######
+                    self.num_stalls_data_hazards += 1
+                    self.num_data_hazards += 1
+                    ###### stats ######
                     return
             # M to D in this cycle
             if self.buffers[2].type not in ['SB', 'S'] and self.buffers[2].rd != 0 and self.buffers[2].rd == self.buffers[0].rs1:
@@ -329,6 +458,10 @@ class Control:
                     self.buffers[0].muxDA = 2
                 else:
                     self.stall = True
+                    ###### stats ######
+                    self.num_stalls_data_hazards += 1
+                    self.num_data_hazards += 1
+                    ###### stats ######
             return
 
         # M to E
@@ -345,6 +478,10 @@ class Control:
                         self.buffers[0].muxB = 3
                 else:
                     self.stall = True
+                    ###### stats ######
+                    self.num_stalls_data_hazards += 1
+                    self.num_data_hazards += 1
+                    ###### stats ######
                     return
             # E to E
             if self.buffers[1].type in ['R', 'I', 'U'] and self.buffers[1].rd != 0 and self.buffers[1].rd in [self.buffers[0].rs1, self.buffers[0].rs2]:
@@ -357,6 +494,10 @@ class Control:
                         self.buffers[0].muxB = 2
                 else:
                     self.stall = True
+                    ###### stats ######
+                    self.num_stalls_data_hazards += 1
+                    self.num_data_hazards += 1
+                    ###### stats ######
                     return
             
             # M to E (because UJ writes to ry)
@@ -370,6 +511,10 @@ class Control:
                         self.buffers[0].muxB = 3
                 else:
                     self.stall = True
+                    ###### stats ######
+                    self.num_stalls_data_hazards += 1
+                    self.num_data_hazards += 1
+                    ###### stats ######
             return
 
         if self.buffers[0].type == 'I' and self.buffers[0].branch == 0 or self.buffers[0].type == 'L': # I format and not jalr
@@ -380,6 +525,10 @@ class Control:
                     self.buffers[0].muxA = 3
                 else:
                     self.stall = True
+                    ###### stats ######
+                    self.num_stalls_data_hazards += 1
+                    self.num_data_hazards += 1
+                    ###### stats ######
                     return
             # E to E
             if self.buffers[1].type in ['R', 'I', 'U'] and self.buffers[1].rd != 0 and self.buffers[1].rd == self.buffers[0].rs1:
@@ -388,6 +537,10 @@ class Control:
                     self.buffers[0].muxA = 2
                 else:
                     self.stall = True
+                    ###### stats ######
+                    self.num_stalls_data_hazards += 1
+                    self.num_data_hazards += 1
+                    ###### stats ######
                     return
     
             # M to E (because UJ writes to ry)
@@ -398,6 +551,10 @@ class Control:
                         self.buffers[0].muxA = 3
                 else:
                     self.stall = True
+                    ###### stats ######
+                    self.num_stalls_data_hazards += 1
+                    self.num_data_hazards += 1
+                    ###### stats ######
             return
 
         # M to M
@@ -410,6 +567,10 @@ class Control:
                     self.buffers[0].muxRM = 0
                 else:
                     self.stall = True
+                    ###### stats ######
+                    self.num_stalls_data_hazards += 1
+                    self.num_data_hazards += 1
+                    ###### stats ######
                     return
             # M to E
             if self.buffers[1].type == 'L' and self.buffers[1].rd != 0 and self.buffers[1].rd == self.buffers[0].rs1:
@@ -418,6 +579,10 @@ class Control:
                     self.buffers[0].muxA = 3
                 else:
                     self.stall = True
+                    ###### stats ######
+                    self.num_stalls_data_hazards += 1
+                    self.num_data_hazards += 1
+                    ###### stats ######
                     return
             # E to E
             if self.buffers[1].type in ['R', 'I', 'U'] and self.buffers[1].rd != 0 and self.buffers[1].rd in [self.buffers[0].rs1, self.buffers[0].rs2]:
@@ -430,6 +595,10 @@ class Control:
                         self.buffers[0].muxRM = 1
                 else:
                     self.stall = True
+                    ###### stats ######
+                    self.num_stalls_data_hazards += 1
+                    self.num_data_hazards += 1
+                    ###### stats ######
                     return
             
             # M to E|M (because UJ writes to ry)
@@ -443,6 +612,10 @@ class Control:
                         self.buffers[0].muxMDR = 1
                 else:
                     self.stall = True
+                    ###### stats ######
+                    self.num_stalls_data_hazards += 1
+                    self.num_data_hazards += 1
+                    ###### stats ######
 
     def execute(self):
         print("EXECUTE")
@@ -511,6 +684,8 @@ class Control:
                 self.memory_access()
             elif stage == 5:
                 self.register_update()
+                self.num_instructions_executed += 1
+                self.CPI = self.cycle/self.num_instructions_executed
         
         for i in range(len(self.stages)):
             if self.stages[i] > 2 or not self.stall:
