@@ -20,15 +20,15 @@ class ProcessorMemoryInterface:
     def __isValidDatatype(self, dataType: int):
         return dataType in [self.BYTE, self.HALFWORD, self.WORD, self.DOUBLEWORD]
 
-    def update(self, rz: int, iag: int, rm: int, mux_control):
+    def update(self, mar, mdr):
         """
         Updates MDR and memory
 
         mux_control: 0 -> rz
                      1 -> iag
         """
-        self.__MAR = rz if mux_control==0 else iag
-        self.__MDR = rm
+        self.__MAR = mar
+        self.__MDR = mdr
         if self.mem_read:
             print(f"\tReading {['byte', 'halfword', 'word', 'doubleword'][self.dataType]} from memory location 0x{self.__MAR:08x}")
             self.mem_read = False
