@@ -8,6 +8,7 @@ class window:
         self.setupMenu()
         self.setupMain()
         self.setupLeft()
+        self.setupPipeline()
         self.setupRight()
         self.setupMid()
         self.setupBottom()
@@ -69,6 +70,9 @@ class window:
     def setupLeft(self):
         self.lPane = leftPane(self.mainframe, self)
 
+    def setupPipeline(self):
+        self.pPane = pipelineView(self.mainframe, self)
+
     def setupMid(self):
         self.mPane = midPane(self.mainframe)
 
@@ -116,6 +120,7 @@ class window:
         memTree.delete(*memTree.get_children())
         for i in memory:
             memTree.insert(parent='', index='end', iid=i, text="", values=('0x'+format(i, '08X'), '0x'+format(memory[i], '02X')))
+        self.pPane.draw(self.control)
 
 class leftPane:
     def __init__(self, parent, win):
@@ -373,3 +378,115 @@ class bottomPane:
             self.win.control.dump()
         except:
             return
+
+class pipelineView:
+
+    def __init__(self, parent, win):
+        self.win = win
+
+        self.setupGUI(parent)
+
+    def setupGUI(self, parent):
+        parentFrame = ttk.Frame(parent)
+        parentFrame.grid(row=0, column=4, sticky='news')
+        parentFrame.columnconfigure(0, weight=1)
+        parentFrame.rowconfigure(0, weight=1)
+
+        # Set the width and height as required
+        self.canvas = tk.Canvas(parentFrame, bg="white", width=500, height=500)
+        self.canvas.pack()
+        self.draw(None) #TODO: REMOVE THIS LINE IN PRODUCTION
+        # THIS DRAW METHOD WILL BE CALLED FROM `update` IN THE `window` CLASS IN `gui.py`
+
+    def draw(self, control):
+        # TODO: Generate `pipelineAr` and `forwardsAr` using `control`
+
+        # How to draw a pipeline?
+        # Create a pipeline array
+        # "|": Produces a buffer
+        # " ": Produces an empty space
+        # "X": Produces a box with "X" written upon it
+        #  - Each new line is indented automatically
+        #  - Arrows are handled automatically
+
+        # How to draw data forwards?
+        # Create a forwards array
+        # The forwards array is copy of the pipeline array
+        # But a character other than space denotes one end of an arrow
+        # In given example, there are 2 forwards with id '1' and '2'
+        # ID can be any character other than space
+
+        pipelineAr = ["F|D|E|M|W",
+                        "F| |D|E|M|W",
+                          "  F|D|E|M|W"]
+        forwardsAr = ["       1 ",
+                        "    2  1   ",
+                          "    2      "]
+
+        cycleBegin = 5
+        currentCycle = 7
+        # `cycleBegin` is the label of the cycle number during which
+        # the first step of `pipelineAr[0]` is executed
+        # `currentCycle` is the current clock cycle (absolute, control.cycle maybe?)
+        self.__draw(pipelineAr, forwardsAr, cycleBegin=cycleBegin, currentCycle=currentCycle)
+
+    def __draw(self, pipelineAr, forwardsAr, cycleBegin=0, currentCycle=0):
+        # self.canvas.size() returns (0, 0)
+        W = 500
+        H = 500
+        BOX_SIZE  = 40
+        BUFFER_W  = 5
+        BUFFER_H  = BOX_SIZE
+        MARGIN = 10
+        TOP_MARGIN = 50
+        LEFT_MARGIN = 50
+        forwardsCoordinates = {}
+
+        # 1. Drawing help lines and cycle labels
+        # 2. Highlighting the current cycle
+        self.canvas.create_line(0, TOP_MARGIN, W, TOP_MARGIN, fill="black")
+        upOffset = 10
+        for i in range(10):
+            drawCycle = cycleBegin+i
+            x = LEFT_MARGIN + MARGIN + (2*i)*BOX_SIZE - BOX_SIZE/2
+            if(drawCycle==currentCycle):
+                self.canvas.create_rectangle(x, TOP_MARGIN, x+2*BOX_SIZE, H, fill="#bbffbb")
+            self.canvas.create_line(x, TOP_MARGIN-upOffset, x, H, dash=(4, 2))
+            self.canvas.create_text(x, TOP_MARGIN-upOffset-20, text=f"{drawCycle}")
+
+        # 1. Drawing boxes, buffers and spaces
+        # 2. Noting the `forwardsCoordinates`
+        for instIndex, instAr in enumerate(pipelineAr):
+            isLeadingSpace = True
+            for gridIndex, item in enumerate(instAr):
+                y = TOP_MARGIN+MARGIN + instIndex*(BOX_SIZE+MARGIN)
+                x = LEFT_MARGIN + MARGIN + (2*instIndex + gridIndex)*BOX_SIZE
+                offset = (BOX_SIZE - BUFFER_W)/2
+                if item=='|':
+                    self.canvas.create_rectangle(x+offset, y, x+offset+BUFFER_W, y+BUFFER_H, fill="black")
+                    self.canvas.create_line(x, y+BOX_SIZE/2, x+offset, y+BOX_SIZE/2, arrow=tk.LAST)
+                    isLeadingSpace = False
+                elif item==" ":
+                    if not isLeadingSpace:
+                        self.canvas.create_line(x-offset, y+BOX_SIZE/2, x+BOX_SIZE, y+BOX_SIZE/2)
+                else:
+                    isLeadingSpace = False
+                    self.canvas.create_rectangle(x, y, x+BOX_SIZE, y+BOX_SIZE)
+                    self.canvas.create_text(x+BOX_SIZE/2, y+BOX_SIZE/2, text=item)
+                    if item!="F":
+                        self.canvas.create_line(x-offset, y+BOX_SIZE/2, x, y+BOX_SIZE/2, arrow=tk.LAST)
+                pipeId = forwardsAr[instIndex][gridIndex]
+                if(pipeId!=" "):
+                    forwardsCoordinates.setdefault(pipeId, [])
+                    forwardsCoordinates[pipeId].append((x, y))
+
+        # 1. Drawing the data forwards
+        for pipeId in forwardsCoordinates:
+            coordinates = forwardsCoordinates[pipeId]
+            if(len(coordinates)>0):
+                (x1, y1), (x2, y2) = coordinates
+                x1 += BOX_SIZE/2
+                x2 += BOX_SIZE/2
+                y1 += BOX_SIZE/2
+                y2 += BOX_SIZE/2
+                self.canvas.create_line(x1, y1, x2, y2, fill="red", arrow=tk.LAST, width=3)
