@@ -759,8 +759,12 @@ class Control:
     # dump memory to file
     def dump(self):
         with open(self.file[:-3] + '_out.mc', 'w') as file:
-            for k, v in self.i_pmi.memory.byteData.items():
-                file.write(f"0x{k:X} 0x{v:X}\n")
+            last = max(self.i_pmi.memory.byteData.keys())
+            pc = 0
+            while pc < last:
+                instr = self.i_pmi.memory.getWordAtAddress(pc)
+                file.write(f"0x{pc:X} 0x{instr:08X}\n")
+                pc += 4
             for k, v in self.pmi.memory.byteData.items():
                 file.write(f"0x{k:X} 0x{v:X}\n")
             
