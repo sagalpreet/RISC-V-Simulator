@@ -623,7 +623,8 @@ class Control:
                     ###### stats ######
             return
 
-        if self.buffers[0].type == 'U':
+        # lui
+        if self.buffers[0].opcode == 0b0110111:
             # M to E
             if self.buffers[1].type in ['R', 'I', 'L', 'U', 'UJ'] and self.buffers[1].rd != 0 and self.buffers[1].rd == self.buffers[0].rd:
                 if self.forwarding:
@@ -690,6 +691,7 @@ class Control:
     # execute one substep
     def substep(self):
         self.stall = False
+        self.flush = False
         for stage in reversed(self.stages):
             if not self.flush and stage == 1:
                 self.fetch()
@@ -697,6 +699,9 @@ class Control:
                 self.decode()
                 if self.stall:
                     print("\tSTALL")
+                    break
+                if self.flush:
+                    print("\tFLUSH")
                     break
             elif stage == 3:
                 self.execute()
@@ -713,18 +718,21 @@ class Control:
         
         self.stages = [x for x in self.stages if x < 6]
 
-        if self.flush:
-            print("FLUSH")
-            self.stages = [x for x in self.stages if x != 1]
+        # if self.flush:
+        #     print("FLUSH")
+        #     self.stages = [x for x in self.stages if x != 1]
 
         if self.stall:
             self.buffers = [self.buffers[0], buffer()] + self.buffers[1:-1]
         else:
             self.buffers = [buffer()] + self.buffers[:-1]
-            self.buffers[0].PC_Temp = self.PC_Temp
-            self.buffers[0].IR = self.IR
-            if not self.flush and 1 not in self.stages:
-                self.stages = [1] + self.stages
+            if self.IR not in [TERMINATION_CODE, 0]:
+                self.buffers[0].PC_Temp = self.PC_Temp
+                self.buffers[0].IR = self.IR
+                if not self.flush and 1 not in self.stages:
+                    self.stages = [1] + self.stages
+            else:
+                self.stages = [x for x in self.stages if x not in [1, 2]]
         self.flush = False
         # update counter
         self.clock += 1
@@ -764,10 +772,8 @@ class Control:
 
     # run the entire program
     def run(self):
-        while (True):
+        while len(self.stages) > 0:
             self.substep()
-            if self.IR == TERMINATION_CODE or self.IR == 0:
-                break
 """
 muxDA --> forwarding to D rs1  [rs1, buffers[1].rz, buffers[2].ry]
 muxDB --> forwarding to D rs2  [rs2, buffers[1].rz, buffers[2].ry]
