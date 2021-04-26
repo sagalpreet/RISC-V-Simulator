@@ -1,5 +1,5 @@
-import ALU, IAG, memory, register
-from buffer import buffer
+from pipelined import ALU, IAG, memory, register
+from pipelined.buffer import buffer
 from copy import deepcopy
 
 TERMINATION_CODE = 0xFFFFFFFF
