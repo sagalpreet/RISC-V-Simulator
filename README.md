@@ -37,10 +37,13 @@ UJ format - jal
 - Open terminal and run the following command.
 ```
         python3 main.py
+        For pipelined version enter 1, for non-pipelined version, enter 2 on console.
+        In case of pipelined version, to enable data forwarding, enter 1 else 2 for only stalling.
+        In case of printing register file in each cycle, enter 1 else 2.
 ```
 
 ### How to use the application ? 
-  [1 minute tutorial](https://drive.google.com/file/d/1Awq1aoI_zdwVIDJv-dfGpSKirQcaYJAN/view?usp=sharing)
+  [1 minute tutorial for non-pipelined version](https://drive.google.com/file/d/1Awq1aoI_zdwVIDJv-dfGpSKirQcaYJAN/view?usp=sharing)
 - Click on **File** in the menubar and select **open**.
 - Browse through your PC, select the required .mc file and click **open**.
 - The address of selected file should now be visible on the **bottom-most bar**.
@@ -49,13 +52,14 @@ UJ format - jal
 - The memory and registers should also be visible. Memory would not be contiguous and only the memory locations set would be visible. All other memory locations contain default values i.e zero.
 - You can go to the desired address by typing in the **textbox** and clicking on **Go**. The desired location would be highlighted. If no location is highlighted, means the address has not been dealt with so far and thus contains the default value 0.
 - **Run** button would execute all the instructions till the end.
-- **Next Instruction** button would execute the current instruction and take you to the next instruction.
+- **Next Instruction** button would execute the current instruction and take you to the next instruction. Clearly this button makes sense only in **Non-Pipelined version** and is rendered useless in pipelined execution.
 - **Next Substep** would execute the next substep (Fetch, Decode, Execute, Memory Access or Register Update) of the current instruction.
 - At the end of execution the **PC** turns red.
 - At each instruction, current corresponding to current value of PC is highlighted.
 - Any change made in register module is also highlighted.
 - Only the *Open* option of menubar is functional as of now, other options will be made functional as and when required in the subsequent phases of the project.
 - Clicking the **Dump** button will dump the memory file into *filename_out.mc* (filename is the input file) which will be created in the same location as the input file.
+- In pipelined version, for every clock cycle, the block diagram is displayed in the rightmost section of the GUI.
 
 ### Input File Format
 - Create a file with *.mc* extension that contains the machine code.
@@ -84,6 +88,9 @@ The simulator also prints messages for each stage to the console. The format is 
 5. *REGISTER UPDATE stage*
         - If any register is written to, register module prints “Writing value <<RY>> to register x<<RD>>” where <<RY>> is RY in hex, and <<RD>> is RD in decimal
 #
+6. *DETAILS / STATS*
+	    - All the details required are printed with labels for every cycle. For example, whenever there is a flush, it is indicated by FLUSH.
+#
 
 ### Dependencies
 - Python 3
@@ -91,28 +98,38 @@ The simulator also prints messages for each stage to the console. The format is 
 
 ### Directory Structure
 RISC-V-Simulator
-- Test Case Folder
+- TestCase
     - bubblesort.mc: contains machine code to run bubble sort on elements to sort them.
     - factorial.mc: calculates factorial of an integer stored and saves it in x10 register
     - fibonacci.mc: stores elements of fibonacci series in the memory
     - sumtilln.mc: finds sum of first n positive integers
     - code.txt: contains all the code used to generate the machine code
- - ALU.py
- - IAG.py
- - README.md
- - control.py
- - gui.py
- - memory.py
- - register.py
- - main.py
+- non_pipelined
+     - ALU.py
+     - IAG.py
+     - control.py
+     - gui.py
+     - memory.py
+     - register.py
+- pipelined
+     - ALU.py
+     - IAG.py
+     - control.py
+     - gui.py
+     - memory.py
+     - register.py
+     - buffer.py
+- main.py
+- README.md
+- Design Document.pdf
 
 ### Work Distribution
 Although we worked as a team and helped each other with the work assigned, following can give the idea of work distribution:
 ```
-Aayush Sabharwal - ALU, Control, Documentation
-Aman Palariya    - Memory
-Sagalpreet Singh - IAG, GUI, Control (Minor), Documentation
-Uday Gupta       - Register
-Amritanshu Rai   - Testcases, Documentation
+Aayush Sabharwal - ALU, Control, Pipeline architecture, Updated ALU, Hazard Detection, Documentation
+Aman Palariya    - Memory, Pipeline architecture, Hazard Detection, Updated GUI, Documentation
+Sagalpreet Singh - IAG, GUI, Control (Minor), Pipeline architecture, Hazard Detection, Documentation
+Uday Gupta       - Register, Pipeline architecture, Updated Decode Stage, Updated IAG, Documentation
+Amritanshu Rai   - Updated Decode Stage, Updateg IAG, Testcases, Design Document, Documentation
 
 ```

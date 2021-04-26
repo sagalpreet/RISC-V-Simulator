@@ -194,12 +194,12 @@ class leftPane:
         return
 
     def next(self):
-        control = self.win.control
+        '''control = self.win.control
         control.step()
         pc = control.iag.PC
         register = control.reg.register
         memory = control.pmi.memory.byteData
-        self.win.update(pc, register, memory)
+        self.win.update(pc, register, memory)'''
         return
 
     def next_(self):
