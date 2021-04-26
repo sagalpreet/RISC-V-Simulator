@@ -52,6 +52,10 @@ class ALU:
             self.rz = op1 >> op2
         elif self.__op == 12: # slt
             self.rz = int(op1 < op2)
+        elif self.__op == 13: # lui
+            if op1 < 0:
+                op1 += 1<<32
+            self.rz = ((op1<<20)>>20)+op2
         
         if self.rz < 0:
             self.rz += 1<<32
@@ -61,15 +65,8 @@ class ALU:
     def control(self, funct3, funct7):
         if self.aluOp == 0:     # add, for load/store instructions
             self.__op = 1
-        elif self.aluOp&1 == 1:  # for branch operations
-            # TODO Repurpose for lui/auipc?
-            if funct3&4 == 0:   # beq or bne
-                self.__op = 2     # use sub
-                self.__inv_zero = funct3&1    # invert zero if bne
-            else:             # blt or bge
-                self.__op = 12    # use slt
-                self.__inv_zero = 1-funct3&1   # invert zero if blt
-        # now, operation is figured out on the basis of funct3 and funct7
+        elif self.aluOp&1 == 1:
+            self.__op = 13
         elif funct3 == 0:   # add/sub/mul
             if self.muxB == 1 or funct7 == 0:   # add(i) if the immediate value is used or funct7 is 0
                 self.__op = 1
