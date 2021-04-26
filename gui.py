@@ -409,10 +409,17 @@ class pipelineView:
         parentFrame.columnconfigure(0, weight=1)
         parentFrame.rowconfigure(0, weight=1)
 
-        # Set the width and height as required
         self.canvas = tk.Canvas(parentFrame, bg="white", width=self.width, height=self.height)
         self.canvas.pack()
-        self.__draw([], [], 0, -1)
+        self.__draw([], [], [], 0, -1)
+
+    def getPc(self, stage, control):
+        pc = None
+        if stage==1:
+            pc = control.iag.PC
+        elif stage<=5:
+            pc = control.buffers[stage-2].PC_Temp
+        return hex(pc) if pc is not None else ""
 
     def draw(self, control):
         if control is None:
@@ -448,6 +455,7 @@ class pipelineView:
 
         pipelineAr = []
         forwardsAr = []
+        pcAr = []
         cycleBegin = control.clock
         currentCycle = control.clock
         for stage in reversed(control.stages):
@@ -459,6 +467,7 @@ class pipelineView:
                 5: "|W",
             }
             if stage in [1, 2, 3, 4, 5]:
+                pcAr.append(self.getPc(stage, control))
                 pipelineStr = pipelineMap[stage]
                 #if control.stall and stage in [1, 2]:
                 #    pipelineStr = "  " + pipelineStr
@@ -469,10 +478,10 @@ class pipelineView:
         # TODO: Hide 0x00000000 instruction
         # TODO: Show instruction PC (optional)
 
-        self.__draw(pipelineAr, forwardsAr, cycleBegin=cycleBegin,
+        self.__draw(pipelineAr, forwardsAr, pcAr, cycleBegin=cycleBegin,
                     currentCycle=currentCycle)
 
-    def __draw(self, pipelineAr, forwardsAr, cycleBegin=0, currentCycle=0, indentAutomatically=False):
+    def __draw(self, pipelineAr, forwardsAr, pcAr, cycleBegin=0, currentCycle=0, indentAutomatically=False):
         # self.canvas.size() returns (0, 0)
         W = self.width
         H = self.height
@@ -481,10 +490,13 @@ class pipelineView:
         BUFFER_H = BOX_SIZE
         MARGIN = 10
         TOP_MARGIN = 50
-        LEFT_MARGIN = 50
+        LEFT_MARGIN = 100
+        offset = (BOX_SIZE - BUFFER_W)/2
+        LINEX = LEFT_MARGIN - BOX_SIZE
         forwardsCoordinates = {}
 
         self.canvas.create_rectangle(0, 0, W, H, fill="white", outline="white")
+        self.canvas.create_rectangle(0, 0, LEFT_MARGIN-BOX_SIZE, H, fill="#eeeeee", outline="white")
 
         # 1. Drawing help lines and cycle labels
         # 2. Highlighting the current cycle
@@ -499,6 +511,19 @@ class pipelineView:
             self.canvas.create_line(x, TOP_MARGIN-upOffset, x, H, dash=(4, 2))
             self.canvas.create_text(
                 x, TOP_MARGIN-upOffset-20, text=f"{drawCycle}")
+        y = TOP_MARGIN + MARGIN/2
+        while(y<H):
+            y += BOX_SIZE + MARGIN
+            self.canvas.create_line(0, y, LINEX, y)
+
+        self.canvas.create_text(LINEX-MARGIN, TOP_MARGIN - MARGIN, anchor="e", text="PC🡓")
+        self.canvas.create_line(LINEX, 0, LINEX, H, width=5)
+        self.canvas.create_line(0, TOP_MARGIN/2, LINEX, TOP_MARGIN/2)
+        self.canvas.create_text(LINEX-MARGIN, TOP_MARGIN/2 - MARGIN, anchor="e", text="CLK🡒")
+        for index, pc in enumerate(pcAr):
+            y = TOP_MARGIN+MARGIN + index*(BOX_SIZE+MARGIN) + BOX_SIZE/2
+            x = LINEX-MARGIN
+            self.canvas.create_text(x, y, text=pc, anchor="e")
 
         # 1. Drawing boxes, buffers and spaces
         # 2. Noting the `forwardsCoordinates`
