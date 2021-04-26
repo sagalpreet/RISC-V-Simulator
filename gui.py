@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import ttk, filedialog
 import tkinter as tk
 
+
 class window:
     def __init__(self, control):
         self.setupRoot()
@@ -12,9 +13,9 @@ class window:
         self.setupRight()
         self.setupMid()
         self.setupBottom()
-        
+
         self.control = control
-    
+
     def setupRoot(self):
         self.root = Tk()
         self.root.title('RISC-V Simulator')
@@ -83,7 +84,6 @@ class window:
         self.bPane = bottomPane(self.mainframe, self)
 
     def update(self, pc, register, memory):
-
         '''
         pc : integer
         register : list of 32 integers
@@ -119,8 +119,10 @@ class window:
         memTree = self.rPane.tree
         memTree.delete(*memTree.get_children())
         for i in memory:
-            memTree.insert(parent='', index='end', iid=i, text="", values=('0x'+format(i, '08X'), '0x'+format(memory[i], '02X')))
+            memTree.insert(parent='', index='end', iid=i, text="", values=(
+                '0x'+format(i, '08X'), '0x'+format(memory[i], '02X')))
         self.pPane.draw(self.control)
+
 
 class leftPane:
     def __init__(self, parent, win):
@@ -133,7 +135,7 @@ class leftPane:
         parentFrame.grid(row=0, column=0, sticky='news')
         parentFrame.columnconfigure(0, weight=1)
         parentFrame.rowconfigure(0, weight=1)
-        
+
         instructionFrame = ttk.Frame(parentFrame)
         instructionFrame.grid(row=0, column=0, sticky='nws')
         instructionFrame.columnconfigure(0, weight=1)
@@ -150,7 +152,8 @@ class leftPane:
         tree_scroll = ttk.Scrollbar(parent)
         tree_scroll.pack(side=RIGHT, fill=Y)
 
-        self.tree = ttk.Treeview(parent, selectmode='none', yscrollcommand=tree_scroll.set)
+        self.tree = ttk.Treeview(
+            parent, selectmode='none', yscrollcommand=tree_scroll.set)
         self.tree['columns'] = ['PC', 'Instruction']
 
         self.tree.column('#0', width=0, stretch=NO)
@@ -169,13 +172,16 @@ class leftPane:
         self.tree.tag_configure('ended', background="red")
 
     def setupButtonFrame(self, parent):
-        run = ttk.Button(parent, text="Run", command=self.run) # button to execute to the end of program
+        # button to execute to the end of program
+        run = ttk.Button(parent, text="Run", command=self.run)
         run.grid(column=0, row=0, sticky='news')
 
-        next = ttk.Button(parent, text="Next Instruction", command=self.next) # button to execute current instruction and go to next instruction
+        # button to execute current instruction and go to next instruction
+        next = ttk.Button(parent, text="Next Instruction", command=self.next)
         next.grid(column=1, row=0, sticky='news')
 
-        next_ = ttk.Button(parent, text="Next Substep", command=self.next_) # button to execute current substep (F-E-D-M-U)
+        # button to execute current substep (F-E-D-M-U)
+        next_ = ttk.Button(parent, text="Next Substep", command=self.next_)
         next_.grid(column=2, row=0, sticky='news')
 
     def run(self):
@@ -186,7 +192,7 @@ class leftPane:
         memory = control.pmi.memory.byteData
         self.win.update(pc, register, memory)
         return
-    
+
     def next(self):
         control = self.win.control
         control.step()
@@ -195,7 +201,7 @@ class leftPane:
         memory = control.pmi.memory.byteData
         self.win.update(pc, register, memory)
         return
-    
+
     def next_(self):
         control = self.win.control
         control.substep()
@@ -205,10 +211,11 @@ class leftPane:
         self.win.update(pc, register, memory)
         return
 
+
 class midPane:
     def __init__(self, parent):
         self.setupGUI(parent)
-    
+
     def setupGUI(self, parent):
         parentFrame = ttk.Frame(parent)
         parentFrame.grid(row=0, column=1, sticky='news')
@@ -221,7 +228,8 @@ class midPane:
         tree_scroll = ttk.Scrollbar(parent)
         tree_scroll.pack(side=RIGHT, fill=Y)
 
-        self.tree = ttk.Treeview(parent, selectmode='browse', yscrollcommand=tree_scroll.set)
+        self.tree = ttk.Treeview(
+            parent, selectmode='browse', yscrollcommand=tree_scroll.set)
         self.tree['columns'] = ['Register Number', 'Register Content']
 
         self.tree.column('#0', width=0, stretch=NO)
@@ -238,10 +246,11 @@ class midPane:
         self.tree.tag_configure('normal', background="white")
         self.tree.tag_configure('updated', background="lightgreen")
 
+
 class rightPane:
     def __init__(self, parent):
         self.setupGUI(parent)
-    
+
     def setupGUI(self, parent):
         parentFrame = ttk.Frame(parent)
         parentFrame.grid(row=0, column=2, sticky='news')
@@ -264,7 +273,8 @@ class rightPane:
         tree_scroll = ttk.Scrollbar(parent)
         tree_scroll.pack(side=RIGHT, fill=Y)
 
-        self.tree = ttk.Treeview(parent, selectmode='browse', yscrollcommand=tree_scroll.set)
+        self.tree = ttk.Treeview(
+            parent, selectmode='browse', yscrollcommand=tree_scroll.set)
         self.tree['columns'] = ['Memory Address', 'Memory Content']
 
         self.tree.column('#0', width=0, stretch=NO)
@@ -282,7 +292,8 @@ class rightPane:
         self.tree.tag_configure('updated', background="lightyellow")
 
     def setupButtonFrame(self, parent):
-        ttk.Label(parent, text="Address to go: ").grid(row=0, column=0, sticky='nws')
+        ttk.Label(parent, text="Address to go: ").grid(
+            row=0, column=0, sticky='nws')
 
         self.toGo = StringVar()  # textbox to get input address
         toGoAddress = ttk.Entry(parent, width=16, textvariable=self.toGo)
@@ -310,6 +321,7 @@ class rightPane:
 
         return
 
+
 class bottomPane:
     def __init__(self, parent, win):
         self.win = win
@@ -319,7 +331,7 @@ class bottomPane:
         parentFrame.columnconfigure(0, weight=1)
         parentFrame.rowconfigure(0, weight=1)
         self.setupGUI(parentFrame)
-    
+
     def setupGUI(self, parent):
         self.filenameLabel = ttk.Label(parent, text='No File Selected')
         self.filenameLabel.grid(row=0, column=0, sticky='news')
@@ -354,21 +366,24 @@ class bottomPane:
                 for line in infile:
                     if text == True:
                         mloc, instr = [str(x) for x in line.split()]
-                        instrTree.insert(parent='', index='end', iid=int(mloc, 16), text="", values=(mloc, instr))
+                        instrTree.insert(parent='', index='end', iid=int(
+                            mloc, 16), text="", values=(mloc, instr))
                     else:
                         mloc, value = [hex(int(x, 16)) for x in line.split()]
-                        memTree.insert(parent='', index='end', iid=int(mloc, 16), text="", values=(mloc, value))
+                        memTree.insert(parent='', index='end', iid=int(
+                            mloc, 16), text="", values=(mloc, value))
                     if int(instr, 16) == TERMINATION_CODE:
                         text = False
             for i in range(32):
-                regTree.insert(parent='', index='end', iid=i, text="", values=('x'+str(i), '0x'+format(0, '08X')))
+                regTree.insert(parent='', index='end', iid=i, text="", values=(
+                    'x'+str(i), '0x'+format(0, '08X')))
 
             control = win.control
             pc = control.iag.PC
             register = control.reg.register
             memory = control.pmi.memory.byteData
             win.update(pc, register, memory)
-            
+
         except:
             print("Error Reading Instructions and Memory Values")
         return
@@ -379,11 +394,13 @@ class bottomPane:
         except:
             return
 
+
 class pipelineView:
 
-    def __init__(self, parent, win):
+    def __init__(self, parent, win, width=500, height=700):
         self.win = win
-
+        self.width = 500
+        self.height = 700
         self.setupGUI(parent)
 
     def setupGUI(self, parent):
@@ -393,20 +410,19 @@ class pipelineView:
         parentFrame.rowconfigure(0, weight=1)
 
         # Set the width and height as required
-        self.canvas = tk.Canvas(parentFrame, bg="white", width=500, height=500)
+        self.canvas = tk.Canvas(parentFrame, bg="white", width=self.width, height=self.height)
         self.canvas.pack()
-        self.draw(None) #TODO: REMOVE THIS LINE IN PRODUCTION
-        # THIS DRAW METHOD WILL BE CALLED FROM `update` IN THE `window` CLASS IN `gui.py`
+        self.__draw([], [], 0, -1)
 
     def draw(self, control):
-        # TODO: Generate `pipelineAr` and `forwardsAr` using `control`
+        if control is None:
+            return
 
         # How to draw a pipeline?
         # Create a pipeline array
         # "|": Produces a buffer
         # " ": Produces an empty space
         # "X": Produces a box with "X" written upon it
-        #  - Each new line is indented automatically
         #  - Arrows are handled automatically
 
         # How to draw data forwards?
@@ -416,31 +432,59 @@ class pipelineView:
         # In given example, there are 2 forwards with id '1' and '2'
         # ID can be any character other than space
 
-        pipelineAr = ["F|D|E|M|W",
-                        "F| |D|E|M|W",
-                          "  F|D|E|M|W"]
-        forwardsAr = ["       1 ",
-                        "    2  1   ",
-                          "    2      "]
-
-        cycleBegin = 5
-        currentCycle = 7
         # `cycleBegin` is the label of the cycle number during which
         # the first step of `pipelineAr[0]` is executed
         # `currentCycle` is the current clock cycle (absolute, control.cycle maybe?)
-        self.__draw(pipelineAr, forwardsAr, cycleBegin=cycleBegin, currentCycle=currentCycle)
 
-    def __draw(self, pipelineAr, forwardsAr, cycleBegin=0, currentCycle=0):
+        #pipelineAr = ["F|D|E|M|W",
+        #              "  F| |D|E|M|W",
+        #              "    F|D|E|M|W"]
+        #forwardsAr = ["       1 ",
+        #              "      2  1   ",
+        #              "        2      "]
+
+        #cycleBegin = 5
+        #currentCycle = 7
+
+        pipelineAr = []
+        forwardsAr = []
+        cycleBegin = control.clock
+        currentCycle = control.clock
+        for stage in reversed(control.stages):
+            pipelineMap = {
+                1: " F|D|E|M|W",
+                2: "|D|E|M|W",
+                3: "|E|M|W",
+                4: "|M|W",
+                5: "|W",
+            }
+            if stage in [1, 2, 3, 4, 5]:
+                pipelineStr = pipelineMap[stage]
+                #if control.stall and stage in [1, 2]:
+                #    pipelineStr = "  " + pipelineStr
+                pipelineAr.append(pipelineStr)
+                forwardsAr.append(" "*len(pipelineStr)) # No forwarding shown
+
+        # TODO: Show data forwarding
+        # TODO: Hide 0x00000000 instruction
+        # TODO: Show instruction PC (optional)
+
+        self.__draw(pipelineAr, forwardsAr, cycleBegin=cycleBegin,
+                    currentCycle=currentCycle)
+
+    def __draw(self, pipelineAr, forwardsAr, cycleBegin=0, currentCycle=0, indentAutomatically=False):
         # self.canvas.size() returns (0, 0)
-        W = 500
-        H = 500
-        BOX_SIZE  = 40
-        BUFFER_W  = 5
-        BUFFER_H  = BOX_SIZE
+        W = self.width
+        H = self.height
+        BOX_SIZE = 40
+        BUFFER_W = 5
+        BUFFER_H = BOX_SIZE
         MARGIN = 10
         TOP_MARGIN = 50
         LEFT_MARGIN = 50
         forwardsCoordinates = {}
+
+        self.canvas.create_rectangle(0, 0, W, H, fill="white", outline="white")
 
         # 1. Drawing help lines and cycle labels
         # 2. Highlighting the current cycle
@@ -449,10 +493,12 @@ class pipelineView:
         for i in range(10):
             drawCycle = cycleBegin+i
             x = LEFT_MARGIN + MARGIN + (2*i)*BOX_SIZE - BOX_SIZE/2
-            if(drawCycle==currentCycle):
-                self.canvas.create_rectangle(x, TOP_MARGIN, x+2*BOX_SIZE, H, fill="#bbffbb")
+            if(drawCycle == currentCycle):
+                self.canvas.create_rectangle(
+                    x, TOP_MARGIN, x+2*BOX_SIZE, H, fill="#bbffbb")
             self.canvas.create_line(x, TOP_MARGIN-upOffset, x, H, dash=(4, 2))
-            self.canvas.create_text(x, TOP_MARGIN-upOffset-20, text=f"{drawCycle}")
+            self.canvas.create_text(
+                x, TOP_MARGIN-upOffset-20, text=f"{drawCycle}")
 
         # 1. Drawing boxes, buffers and spaces
         # 2. Noting the `forwardsCoordinates`
@@ -460,33 +506,39 @@ class pipelineView:
             isLeadingSpace = True
             for gridIndex, item in enumerate(instAr):
                 y = TOP_MARGIN+MARGIN + instIndex*(BOX_SIZE+MARGIN)
-                x = LEFT_MARGIN + MARGIN + (2*instIndex + gridIndex)*BOX_SIZE
+                x = LEFT_MARGIN + MARGIN + ((2*instIndex if indentAutomatically else 0) + gridIndex-1)*BOX_SIZE
                 offset = (BOX_SIZE - BUFFER_W)/2
-                if item=='|':
-                    self.canvas.create_rectangle(x+offset, y, x+offset+BUFFER_W, y+BUFFER_H, fill="black")
-                    self.canvas.create_line(x, y+BOX_SIZE/2, x+offset, y+BOX_SIZE/2, arrow=tk.LAST)
+                if item == '|':
+                    self.canvas.create_rectangle(
+                        x+offset, y, x+offset+BUFFER_W, y+BUFFER_H, fill="black")
+                    self.canvas.create_line(
+                        x, y+BOX_SIZE/2, x+offset, y+BOX_SIZE/2, arrow=tk.LAST)
                     isLeadingSpace = False
-                elif item==" ":
+                elif item == " ":
                     if not isLeadingSpace:
-                        self.canvas.create_line(x-offset, y+BOX_SIZE/2, x+BOX_SIZE, y+BOX_SIZE/2)
+                        self.canvas.create_line(
+                            x-offset, y+BOX_SIZE/2, x+BOX_SIZE, y+BOX_SIZE/2)
                 else:
                     isLeadingSpace = False
                     self.canvas.create_rectangle(x, y, x+BOX_SIZE, y+BOX_SIZE)
-                    self.canvas.create_text(x+BOX_SIZE/2, y+BOX_SIZE/2, text=item)
-                    if item!="F":
-                        self.canvas.create_line(x-offset, y+BOX_SIZE/2, x, y+BOX_SIZE/2, arrow=tk.LAST)
+                    self.canvas.create_text(
+                        x+BOX_SIZE/2, y+BOX_SIZE/2, text=item)
+                    if item != "F":
+                        self.canvas.create_line(
+                            x-offset, y+BOX_SIZE/2, x, y+BOX_SIZE/2, arrow=tk.LAST)
                 pipeId = forwardsAr[instIndex][gridIndex]
-                if(pipeId!=" "):
+                if(pipeId != " "):
                     forwardsCoordinates.setdefault(pipeId, [])
                     forwardsCoordinates[pipeId].append((x, y))
 
         # 1. Drawing the data forwards
         for pipeId in forwardsCoordinates:
             coordinates = forwardsCoordinates[pipeId]
-            if(len(coordinates)>0):
+            if(len(coordinates) > 0):
                 (x1, y1), (x2, y2) = coordinates
                 x1 += BOX_SIZE/2
                 x2 += BOX_SIZE/2
                 y1 += BOX_SIZE/2
                 y2 += BOX_SIZE/2
-                self.canvas.create_line(x1, y1, x2, y2, fill="red", arrow=tk.LAST, width=3)
+                self.canvas.create_line(
+                    x1, y1, x2, y2, fill="red", arrow=tk.LAST, width=3)
