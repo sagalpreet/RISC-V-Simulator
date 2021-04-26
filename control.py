@@ -759,16 +759,13 @@ class Control:
     # dump memory to file
     def dump(self):
         with open(self.file[:-3] + '_out.mc', 'w') as file:
-            word = 0
-            addr = 0
-            while word != TERMINATION_CODE:
-                word = self.pmi.memory.getWordAtAddress(addr)
-                file.write(f"0x{addr:X} 0x{word:08X}\n")
-                addr += 4
-
+            last = max(self.i_pmi.memory.byteData.keys())
+            pc = 0
+            while pc < last:
+                instr = self.i_pmi.memory.getWordAtAddress(pc)
+                file.write(f"0x{pc:X} 0x{instr:08X}\n")
+                pc += 4
             for k, v in self.pmi.memory.byteData.items():
-                if k <= addr:
-                    continue
                 file.write(f"0x{k:X} 0x{v:X}\n")
             
             file.write("Statistics of the run:\n")            
