@@ -54,13 +54,13 @@ class Control:
         # incremented in decode when SB instruction and self.stall is false
         self.num_control_hazards = 0
         
-        #
+        # incremented in decode stage when self.flush is true
         self.num_branch_misprediction = 0
         
         # incremented in hazard_detection whenever self.stall is set to true since currently stalls are introduced due to data hazards (not sure) 
         self.num_stalls_data_hazards = 0
         
-        # not incremented
+        # incremented in decode stage when self.flush is true
         self.num_stalls_control_hazards = 0
 
     # reset control to initial values
@@ -106,13 +106,13 @@ class Control:
         # incremented in decode when SB instruction and self.stall is false
         self.num_control_hazards = 0
         
-        #
+        # incremented in decode stage when self.flush is true
         self.num_branch_misprediction = 0
         
         # incremented in hazard_detection whenever self.stall is set to true since currently stalls are introduced due to data hazards (not sure) 
         self.num_stalls_data_hazards = 0
         
-        # not incremented
+        # incremented in decode stage when self.flush is true
         self.num_stalls_control_hazards = 0
         
 
@@ -372,6 +372,9 @@ class Control:
             #self.num_instructions_executed should be incremented when the 5th stage has been completed for an instruction 
         if self.stall:
             self.num_stalls += 1
+        if self.flush:
+            self.num_stalls_control_hazards += 1
+            self.num_branch_misprediction += 1            
         ###### stats ######
 
         print(f"\talu.muxA: 0b{self.buffers[0].muxA}")
