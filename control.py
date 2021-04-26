@@ -718,10 +718,13 @@ class Control:
             self.buffers = [self.buffers[0], buffer()] + self.buffers[1:-1]
         else:
             self.buffers = [buffer()] + self.buffers[:-1]
-            self.buffers[0].PC_Temp = self.PC_Temp
-            self.buffers[0].IR = self.IR
-            if not self.flush and 1 not in self.stages:
-                self.stages = [1] + self.stages
+            if self.IR not in [TERMINATION_CODE, 0]:
+                self.buffers[0].PC_Temp = self.PC_Temp
+                self.buffers[0].IR = self.IR
+                if not self.flush and 1 not in self.stages:
+                    self.stages = [1] + self.stages
+            else:
+                self.stages = [x for x in self.stages if x not in [1, 2]]
         self.flush = False
         # update counter
         self.clock += 1
@@ -761,10 +764,8 @@ class Control:
 
     # run the entire program
     def run(self):
-        while (True):
+        while len(self.stages) > 0:
             self.substep()
-            if self.IR == TERMINATION_CODE or self.IR == 0:
-                break
 """
 muxDA --> forwarding to D rs1  [rs1, buffers[1].rz, buffers[2].ry]
 muxDB --> forwarding to D rs2  [rs2, buffers[1].rz, buffers[2].ry]
