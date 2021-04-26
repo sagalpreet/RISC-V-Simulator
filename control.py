@@ -21,6 +21,7 @@ class Control:
         self.stall = False
         self.flush = False
         self.forwarding = False
+        self.print_registers = False
         self.stages = []
 
         # modulo 5 clock for substeps
@@ -718,10 +719,6 @@ class Control:
         
         self.stages = [x for x in self.stages if x < 6]
 
-        # if self.flush:
-        #     print("FLUSH")
-        #     self.stages = [x for x in self.stages if x != 1]
-
         if self.stall:
             self.buffers = [self.buffers[0], buffer()] + self.buffers[1:-1]
         else:
@@ -738,6 +735,10 @@ class Control:
         self.clock += 1
 
         print("Cycle ", self.clock, "completed")
+        if self.print_registers:
+            print("REGISTER VALUES:")
+            for i in range(32):
+                print(f"\t{' ' if i < 10 else ''}x{i}: 0x{self.reg.register[i]:08x}")
 
     # load a .mc file
     def load(self, file):
