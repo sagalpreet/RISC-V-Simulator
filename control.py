@@ -620,7 +620,8 @@ class Control:
                     ###### stats ######
             return
 
-        if self.buffers[0].type == 'U':
+        # lui
+        if self.buffers[0].opcode == 0b0110111:
             # M to E
             if self.buffers[1].type in ['R', 'I', 'L', 'U', 'UJ'] and self.buffers[1].rd != 0 and self.buffers[1].rd == self.buffers[0].rd:
                 if self.forwarding:
