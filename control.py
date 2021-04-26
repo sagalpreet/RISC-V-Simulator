@@ -769,6 +769,21 @@ class Control:
                 if k <= addr:
                     continue
                 file.write(f"0x{k:X} 0x{v:X}\n")
+            
+            file.write("Statistics of the run:\n")            
+            file.write(f"\tStat1: Total number of cycles: {self.clock}\n")
+            file.write(f"\tStat2: Total instructions executed: {self.num_instructions_executed}\n")
+            file.write(f"\tStat3: CPI: {self.CPI}\n")
+            file.write(f"\tStat4: Number of Data-transfer (load and store) instructions executed: {self.num_instructions_data_transfer}\n")
+            file.write(f"\tStat5: Number of ALU instructions executed: {self.num_instructions_alu}\n")
+            file.write(f"\tStat6: Number of Control instructions executed: {self.num_instructions_control}\n")
+            file.write(f"\tStat7: Number of stalls/bubbles in the pipeline: {self.num_stalls}\n")
+            file.write(f"\tStat8: Number of data hazards: {self.num_data_hazards}\n")
+            file.write(f"\tStat9: Number of control hazards: {self.num_control_hazards}\n")
+            file.write(f"\tStat10: Number of branch mispredictions: {self.num_branch_misprediction}\n")
+            file.write(f"\tStat11: Number of stalls due to data hazards: {self.num_stalls_data_hazards}\n")
+            file.write(f"\tStat12: Number of stalls due to control hazards: {self.num_stalls_control_hazards}\n")
+            
 
     # run the entire program
     def run(self):
