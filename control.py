@@ -274,10 +274,14 @@ class Control:
             print(f"\timmediate: 0x{self.buffers[0].imm:05x}")
             if self.buffers[0].opcode == 0b0010111:  # if auipc
                 self.buffers[0].muxA = 1  # op1 is PC
+                self.buffers[0].aluOp = 0  # add
             else:  # if lui
                 self.buffers[0].muxA = 0  # op1 is rs1
+                self.buffers[0].aluOp = 1   # lui
+                print("\tCopying rs1 to rd for lui")
+                self.buffers[0].rs1 = self.buffers[0].rd
+            
             self.buffers[0].muxB = 1  # op2 is rs2
-            self.buffers[0].aluOp = 0  # add
             self.buffers[0].reg_write = True  # write to register
             self.buffers[0].muxY = 0  # output is ALU
             self.buffers[0].branch = 0  # don't branch
@@ -386,8 +390,6 @@ class Control:
         print(f"\treg_write: {self.buffers[0].reg_write}")
         print(f"\tmem_read: {self.buffers[0].mem_read}")
         print(f"\tmem_write: {self.buffers[0].mem_write}")
-
-        print(self.buffers[0])
 
     def detect_data_hazards(self):
         # M to D
@@ -619,7 +621,22 @@ class Control:
                     self.num_stalls_data_hazards += 1
                     self.num_data_hazards += 1
                     ###### stats ######
+            return
 
+        if self.buffers[0].type == 'U':
+            # M to E
+            if self.buffers[1].type in ['R', 'I', 'L', 'U', 'UJ'] and self.buffers[1].rd != 0 and self.buffers[1].rd == self.buffers[0].rd:
+                if self.forwarding:
+                    print("\tForwarding M to E (rd)")
+                    self.buffers[0].muxA = 3
+                else:
+                    self.stall = True
+                    ###### stats ######
+                    self.num_stalls_data_hazards += 1
+                    self.num_data_hazards += 1
+                    ###### stats ######
+                    return
+    
     def execute(self):
         print("EXECUTE")
         self.reg.rs1 = self.buffers[1].rs1
@@ -688,7 +705,7 @@ class Control:
             elif stage == 5:
                 self.register_update()
                 self.num_instructions_executed += 1
-                self.CPI = self.cycle/self.num_instructions_executed
+                self.CPI = self.clock/self.num_instructions_executed
         
         for i in range(len(self.stages)):
             if self.stages[i] > 2 or not self.stall:
