@@ -688,6 +688,7 @@ class Control:
     # execute one substep
     def substep(self):
         self.stall = False
+        self.flush = False
         for stage in reversed(self.stages):
             if not self.flush and stage == 1:
                 self.fetch()
@@ -695,6 +696,9 @@ class Control:
                 self.decode()
                 if self.stall:
                     print("\tSTALL")
+                    break
+                if self.flush:
+                    print("\tFLUSH")
                     break
             elif stage == 3:
                 self.execute()
@@ -711,9 +715,9 @@ class Control:
         
         self.stages = [x for x in self.stages if x < 6]
 
-        if self.flush:
-            print("FLUSH")
-            self.stages = [x for x in self.stages if x != 1]
+        # if self.flush:
+        #     print("FLUSH")
+        #     self.stages = [x for x in self.stages if x != 1]
 
         if self.stall:
             self.buffers = [self.buffers[0], buffer()] + self.buffers[1:-1]
