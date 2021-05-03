@@ -13,8 +13,8 @@ class Control:
         self.blockSize = blockSize
         self.iag = IAG.IAG(0)
         self.alu = ALU.ALU()
-        self.pmi = memory.ProcessorMemoryInterface(4, self.numSets, self.numBlocksPerSet, self.blockSize)
-        self.i_pmi = memory.ProcessorMemoryInterface(4, self.numSets, self.numBlocksPerSet, self.blockSize)  # instruction memory
+        self.pmi = memory.ProcessorMemoryInterface(4, self.numSets, self.numBlocksPerSet, self.blockSize, "D$")
+        self.i_pmi = memory.ProcessorMemoryInterface(4, self.numSets, self.numBlocksPerSet, self.blockSize, "I$")  # instruction memory
         self.reg = register.register_module()
         # fields and some controls
         self.IR = 0
@@ -71,8 +71,8 @@ class Control:
     def reset(self):
         self.iag = IAG.IAG(0)
         self.alu = ALU.ALU()
-        self.pmi = memory.ProcessorMemoryInterface(4, self.numSets, self.numBlocksPerSet, self.blockSize)
-        self.i_pmi = memory.ProcessorMemoryInterface(4, self.numSets, self.numBlocksPerSet, self.blockSize)  # instruction memory
+        self.pmi = memory.ProcessorMemoryInterface(4, self.numSets, self.numBlocksPerSet, self.blockSize, "D$")
+        self.i_pmi = memory.ProcessorMemoryInterface(4, self.numSets, self.numBlocksPerSet, self.blockSize, "I$")  # instruction memory
         self.reg = register.register_module()
         self.buffers = [buffer(), buffer(), buffer(), buffer()]
         self.stages = [1]

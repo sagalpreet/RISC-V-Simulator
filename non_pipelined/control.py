@@ -4,9 +4,12 @@ TERMINATION_CODE = 0xFFFFFFFF
 class Control:
     def __init__(self, numSets, numBlocksPerSet, blockSize):
         # instance of all modules
+        self.numSets = numSets
+        self.numBlocksPerSet = numBlocksPerSet
+        self.blockSize = blockSize
         self.iag = IAG.IAG(0)
         self.alu = ALU.ALU()
-        self.pmi = memory.ProcessorMemoryInterface(4, self.numSets, self.numBlocksPerSet, self.blockSize)
+        self.pmi = memory.ProcessorMemoryInterface(4, self.numSets, self.numBlocksPerSet, self.blockSize, "$")
         self.reg = register.register_module()
 
         # fields and some controls
@@ -24,7 +27,7 @@ class Control:
     def reset(self):
         self.iag = IAG.IAG(0)
         self.alu = ALU.ALU()
-        self.pmi = memory.ProcessorMemoryInterface(4, self.numSets, self.numBlocksPerSet, self.blockSize)
+        self.pmi = memory.ProcessorMemoryInterface(4, self.numSets, self.numBlocksPerSet, self.blockSize, "$")
         self.reg = register.register_module()
 
         # global variables
