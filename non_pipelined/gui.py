@@ -11,6 +11,7 @@ class window:
         self.setupRight()
         self.setupMid()
         self.setupBottom()
+        self.setupCache()
         
         self.control = control
     
@@ -77,6 +78,9 @@ class window:
 
     def setupBottom(self):
         self.bPane = bottomPane(self.mainframe, self)
+    
+    def setupCache(self):
+        self.cachePane = cache_stats(self.mainframe, self)
 
     def update(self, pc, register, memory):
 
@@ -116,6 +120,8 @@ class window:
         memTree.delete(*memTree.get_children())
         for i in memory:
             memTree.insert(parent='', index='end', iid=i, text="", values=('0x'+format(i, '08X'), '0x'+format(memory[i], '02X')))
+        
+        self.cachePane.draw(self.control)
 
 class leftPane:
     def __init__(self, parent, win):
@@ -373,3 +379,88 @@ class bottomPane:
             self.win.control.dump()
         except:
             return
+
+
+class cache_stats:
+    
+    def __init__(self, parent, win, width=500, height=90):
+        self.win = win
+        self.width = 500
+        self.height = 90
+        self.setupGUI(parent)
+        # data cache stats
+        self.d_hits_pane
+        self.d_misses_pane
+        self.d_accesses_pane
+        # instruction cache stats
+        self.i_hits_pane
+        self.i_misses_pane
+        self.i_accesses_pane
+        
+    def setupGUI(self, parent):
+        parentFrame = ttk.Frame(parent)
+        parentFrame.grid(row=2, column=2, sticky='news')
+        parentFrame.columnconfigure(0, weight=1)
+        parentFrame.rowconfigure(0, weight=1)
+
+        self.canvas = tk.Canvas(parentFrame, bg="white", width=self.width, height=self.height)
+        self.canvas.pack()
+        #self.__draw()
+        self.d_hits_pane =self.canvas.create_text(100,15,fill="green",font="Times 15 italic bold",text="No. of D$ hits: 0")
+        self.d_misses_pane = self.canvas.create_text(100,45,fill="red",font="Times 15 italic bold",text="No. of D$ misses: 0")
+        self.d_accesses_pane = self.canvas.create_text(100,75,fill="darkblue",font="Times 15 italic bold",text="No. of D$ accesses: 0")
+        
+        self.i_hits_pane =self.canvas.create_text(350,15,fill="green",font="Times 15 italic bold",text="No. of I$ hits: 0")
+        self.i_misses_pane = self.canvas.create_text(350,45,fill="red",font="Times 15 italic bold",text="No. of I$ misses: 0")
+        self.i_accesses_pane = self.canvas.create_text(350,75,fill="darkblue",font="Times 15 italic bold",text="No. of I$ accesses: 0")
+        
+    def get_hits_data_cache(self, control):
+        num_hits = control.pmi.cache.hits
+        return num_hits
+    
+    def get_misses_data_cache(self, control):
+        num_misses = control.pmi.cache.misses
+        return num_misses
+    
+    def get_accesses_data_cache(self, control):
+        num_accesses = control.pmi.cache.numAccesses
+        return num_accesses
+    
+    def get_hits_intruction_cache(self, control):
+        num_hits = control.i_pmi.cache.hits
+        return num_hits
+    
+    def get_misses_intruction_cache(self, control):
+        num_misses = control.i_pmi.cache.misses
+        return num_misses
+    
+    def get_accesses_intruction_cache(self, control):
+        num_accesses = control.i_pmi.cache.numAccesses
+        return num_accesses       
+    
+    def draw(self, control):
+        if control is None:
+            return
+        
+        d_hits = self.get_hits_data_cache(control)
+        d_misses = self.get_misses_data_cache(control)
+        d_accesses = self.get_accesses_data_cache(control)
+        
+        self.canvas.itemconfigure(self.d_hits_pane, text = f"No. of D$ hits: {d_hits}")
+        self.canvas.itemconfigure(self.d_misses_pane, text = f"No. of D$ misses: {d_misses}")
+        self.canvas.itemconfigure(self.d_accesses_pane, text = f"No. of D$ accesses: {d_accesses}")
+        
+        i_hits = self.get_hits_intruction_cache(control)
+        i_misses = self.get_misses_intruction_cache(control)
+        i_accesses = self.get_accesses_intruction_cache(control)
+        
+        self.canvas.itemconfigure(self.i_hits_pane, text = f"No. of I$ hits: {i_hits}")
+        self.canvas.itemconfigure(self.i_misses_pane, text = f"No. of I$ misses: {i_misses}")
+        self.canvas.itemconfigure(self.i_accesses_pane, text = f"No. of I$ accesses: {i_accesses}")  
+        
+        
+        
+    def __draw(self):
+        self.canvas.create_text(100,15,fill="green",font="Times 15 italic bold",text="No. of hits: 0")
+        self.canvas.create_text(100,45,fill="red",font="Times 15 italic bold",text="No. of misses: 0")
+        self.canvas.create_text(100,75,fill="darkblue",font="Times 15 italic bold",text="No. of accesses: 0")
