@@ -50,6 +50,8 @@ class Set:
     
     def request(self, tag):
         if tag in self.blocks:
+            self.blocks.remove(tag)
+            self.blocks.append(tag)
             return True
         else:
             self.blocks.append(tag)

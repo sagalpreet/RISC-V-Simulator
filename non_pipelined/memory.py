@@ -7,68 +7,54 @@ and hits accordingly.
 '''
 
 class Cache:
-  def __init__(self, numSets, numBlocksPerSet, blockSize, name):
-    self.name = name
-    self.numSets = numSets
-    self.numBlocksPerSet = numBlocksPerSet
-    self.blockSize = blockSize
+    def __init__(self, numSets, numBlocksPerSet, blockSize, name):
+        self.name = name
+        self.numSets = numSets
+        self.numBlocksPerSet = numBlocksPerSet
+        self.blockSize = blockSize
 
-    self.sets = deque([Set(numBlocksPerSet, blockSize) for i in range(numSets)])
+        self.sets = [Set(numBlocksPerSet) for i in range(numSets)]
 
-    self.numAccesses = 0
-    self.hits = 0
-    self.conflictMiss, self.coldMiss, self.capacityMiss = 0, 0, 0
-    self.MCT = set()
+        self.numAccesses = 0
+        self.hits = 0
+        self.misses = 0
 
-  def readWrite(self, address):
-    self.numAccesses += 1
-    setNumber = address % self.numSets
-    index = address % self.blockSize    # not required though
+    def readWrite(self, address, dataType):
+        self.numAccesses += 1
+        index = address % self.numSets
+        tag = address - address % self.blockSize
 
-    match = False
+        if self.sets[index].request(tag):
+           self.hits += 1
+        else:
+            self.misses += 1
 
-    for block in self.sets[setNumber]:
-      if block.tag == index:
-        self.hits += 1
-        match = block
-        self.sets[setNumber].remove(block)
-        self.sets[setNumber].appendleft(block)
-    
-    if match != False:
-      self.sets[setNumber].remove(match)
-      self.sets[setNumber].appendleft(match)
-      return
+        end_address = address + dataType
+        end_tag = end_address - end_address % self.blockSize
 
-    # miss
-    if index in self.MCT:
-      self.conflictMiss += 1
-    else:
-      self.coldMiss += 1
-    
-    self.sets[setNumber].pop()
-    new = Blocks(self.blockSize)
-    new.tag = index
-    self.sets[setNumber].appendleft(new)
-    self.MCT.add(index)
+        if end_tag != tag:
+            self.readWrite(end_address, 0)
 
-  def __del__(self):
-    print('Cache details for '+self.name+' memory:')
-    print('Number of accesses:', self.numAccesses)
-    print('Number of hits:', self.hits)
-    print('Number of cold misses:', self.coldMiss)
-    print('Number of capacity misses:', self.capacityMiss)
-    print('Number of conflict misses:', self.conflictMiss)
+    def __del__(self):
+        print('Cache details for '+self.name+' memory:')
+        print('Number of accesses:', self.numAccesses)
+        print('Number of hits:', self.hits)
+        print('Number of misses:', self.misses)
+
 
 class Set:
-  def __init__ (self, numBlocks, blockSize):
-    self.numBlocks = numBlocks
-    self.blocks = [Blocks(blockSize) for i in range(numBlocks)]
-
-class Blocks:
-  def __init__ (self, blockSize):
-    self.tag = None
-    self.data = None # not required though
-    self.blockSize = blockSize
+    def __init__(self, numBlocks):
+        self.numBlocks = numBlocks
+        self.blocks = deque([], numBlocks)
+    
+    def request(self, tag):
+        if tag in self.blocks:
+            self.blocks.remove(tag)
+            self.blocks.append(tag)
+            return True
+        else:
+            self.blocks.append(tag)
+            return False
 
 
 class ProcessorMemoryInterface:
@@ -106,13 +92,13 @@ class ProcessorMemoryInterface:
         if self.mem_read:
             print(f"\tReading {['byte', 'halfword', 'word', 'doubleword'][self.dataType]} from memory location 0x{self.__MAR:08x}")
             self.mem_read = False
-            self.cache.readWrite(self.__MAR)
+            self.cache.readWrite(self.__MAR, self.dataType)
             self.__MDR = self.__readFromMemory(self.__MAR, self.dataType)
             self.dataType = -1
         if self.mem_write:
             print(f"\tWriting {['byte', 'halfword', 'word', 'doubleword'][self.dataType]} 0x{self.__MDR:08x} to memory location 0x{self.__MAR:08x}")
             assert self.__isValidDatatype(self.dataType), f'Invalid dataType (value: {self.dataType})'
-            self.cache.readWrite(self.__MAR)
+            self.cache.readWrite(self.__MAR, self.dataType)
             self.__writeToMemory(self.__MAR, self.dataType, self.__MDR)
             self.mem_write = False
             self.dataType = -1
