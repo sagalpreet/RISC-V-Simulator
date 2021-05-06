@@ -237,4 +237,15 @@ class ByteAddressableMemory:
         Updates the doubleword at `address` with `value`
         """
         self.__setValueAtAddress(address, self.getWordSizeInBytes()*2, value)
+    
+    def getNBytes(self,address:int, n: int):
+
+        data = ""
+        for i in range(n):
+          data = data + str(self.__getValueAtAddress(address+i, 1))
+        return int(data)
+
+      
+
+
 

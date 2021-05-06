@@ -2,19 +2,21 @@ from tkinter import *
 from tkinter import ttk, filedialog
 import tkinter as tk
 
+
 class window:
     def __init__(self, control):
         self.setupRoot()
         self.setupMenu()
         self.setupMain()
         self.setupLeft()
+        self.setupCache()
         self.setupRight()
         self.setupMid()
         self.setupBottom()
-        self.setupCache()
-        
+        self.setupCacheStats()
+
         self.control = control
-    
+
     def setupRoot(self):
         self.root = Tk()
         self.root.title('RISC-V Simulator')
@@ -70,6 +72,9 @@ class window:
     def setupLeft(self):
         self.lPane = leftPane(self.mainframe, self)
 
+    def setupCache(self):
+        self.cPane = cachePane(self.mainframe, self)
+
     def setupMid(self):
         self.mPane = midPane(self.mainframe)
 
@@ -78,12 +83,11 @@ class window:
 
     def setupBottom(self):
         self.bPane = bottomPane(self.mainframe, self)
-    
-    def setupCache(self):
+
+    def setupCacheStats(self):
         self.cachePane = cache_stats(self.mainframe, self)
 
     def update(self, pc, register, memory):
-
         '''
         pc : integer
         register : list of 32 integers
@@ -119,9 +123,24 @@ class window:
         memTree = self.rPane.tree
         memTree.delete(*memTree.get_children())
         for i in memory:
-            memTree.insert(parent='', index='end', iid=i, text="", values=('0x'+format(i, '08X'), '0x'+format(memory[i], '02X')))
-        
+            memTree.insert(parent='', index='end', iid=i, text="", values=(
+                '0x'+format(i, '08X'), '0x'+format(memory[i], '02X')))
+
         self.cachePane.draw(self.control)
+
+        # update cache
+        cacheTree = self.cPane.tree
+        sets = self.control.pmi.cache.sets
+        numSets = self.control.pmi.cache.numSets
+        numBlocksPerSet = self.control.pmi.cache.numBlocksPerSet
+        blockSize = self.control.pmi.cache.blockSize
+        for i in range(numSets):
+            for j in range(len(sets[i].blocks)):
+                iid = 'd$'+str(i+1)+'$'+str(j+1)
+                tag = sets[i].blocks[j]
+                frmt = '0'+str(2*blockSize)+'X'
+                cacheTree.item(iid, values=('', '0x'+format(tag, '08X'), '0x'+format(self.control.pmi.memory.getNBytes(tag, blockSize), frmt)))
+
 
 class leftPane:
     def __init__(self, parent, win):
@@ -134,7 +153,7 @@ class leftPane:
         parentFrame.grid(row=0, column=0, sticky='news')
         parentFrame.columnconfigure(0, weight=1)
         parentFrame.rowconfigure(0, weight=1)
-        
+
         instructionFrame = ttk.Frame(parentFrame)
         instructionFrame.grid(row=0, column=0, sticky='nws')
         instructionFrame.columnconfigure(0, weight=1)
@@ -151,7 +170,8 @@ class leftPane:
         tree_scroll = ttk.Scrollbar(parent)
         tree_scroll.pack(side=RIGHT, fill=Y)
 
-        self.tree = ttk.Treeview(parent, selectmode='none', yscrollcommand=tree_scroll.set)
+        self.tree = ttk.Treeview(
+            parent, selectmode='none', yscrollcommand=tree_scroll.set)
         self.tree['columns'] = ['PC', 'Instruction']
 
         self.tree.column('#0', width=0, stretch=NO)
@@ -170,13 +190,16 @@ class leftPane:
         self.tree.tag_configure('ended', background="red")
 
     def setupButtonFrame(self, parent):
-        run = ttk.Button(parent, text="Run", command=self.run) # button to execute to the end of program
+        # button to execute to the end of program
+        run = ttk.Button(parent, text="Run", command=self.run)
         run.grid(column=0, row=0, sticky='news')
 
-        next = ttk.Button(parent, text="Next Instruction", command=self.next) # button to execute current instruction and go to next instruction
+        # button to execute current instruction and go to next instruction
+        next = ttk.Button(parent, text="Next Instruction", command=self.next)
         next.grid(column=1, row=0, sticky='news')
 
-        next_ = ttk.Button(parent, text="Next Substep", command=self.next_) # button to execute current substep (F-E-D-M-U)
+        # button to execute current substep (F-E-D-M-U)
+        next_ = ttk.Button(parent, text="Next Substep", command=self.next_)
         next_.grid(column=2, row=0, sticky='news')
 
     def run(self):
@@ -187,7 +210,7 @@ class leftPane:
         memory = control.pmi.memory.byteData
         self.win.update(pc, register, memory)
         return
-    
+
     def next(self):
         control = self.win.control
         control.step()
@@ -196,7 +219,7 @@ class leftPane:
         memory = control.pmi.memory.byteData
         self.win.update(pc, register, memory)
         return
-    
+
     def next_(self):
         control = self.win.control
         control.substep()
@@ -206,13 +229,57 @@ class leftPane:
         self.win.update(pc, register, memory)
         return
 
-class midPane:
-    def __init__(self, parent):
+
+class cachePane:
+    def __init__(self, parent, win):
+        self.win = win
+
         self.setupGUI(parent)
-    
+
     def setupGUI(self, parent):
         parentFrame = ttk.Frame(parent)
         parentFrame.grid(row=0, column=1, sticky='news')
+        parentFrame.columnconfigure(0, weight=1)
+        parentFrame.rowconfigure(0, weight=1)
+
+        cacheFrame = ttk.Frame(parentFrame)
+        cacheFrame.grid(row=0, column=0, sticky='nws')
+        cacheFrame.columnconfigure(0, weight=1)
+        cacheFrame.rowconfigure(0, weight=1)
+        self.setupCacheFrame(cacheFrame)
+
+    def setupCacheFrame(self, parent):
+        tree_scroll = ttk.Scrollbar(parent)
+        tree_scroll.pack(side=RIGHT, fill=Y)
+
+        self.tree = ttk.Treeview(
+            parent, selectmode='none', yscrollcommand=tree_scroll.set)
+        self.tree['columns'] = ['Set Number', 'Tag', 'Cache Content']
+
+        self.tree.column('#0', width=25, stretch=NO)
+        self.tree.column('Set Number', width=100, anchor=CENTER)
+        self.tree.column('Cache Content', anchor=CENTER)
+        self.tree.column('Tag', anchor=CENTER)
+
+        self.tree.heading('Set Number', text='Set Number')
+        self.tree.heading('Cache Content', text='Cache Content')
+        self.tree.heading('Tag', text='Tag')
+
+        self.tree.pack(side=LEFT, fill=BOTH, expand=True)
+        tree_scroll.config(command=self.tree.yview)
+        #self.tree.grid(row=0, column=0, sticky='news')
+
+        self.tree.tag_configure('heading', background="lightyellow")
+        self.tree.tag_configure('victim', background="lightgreen")
+
+
+class midPane:
+    def __init__(self, parent):
+        self.setupGUI(parent)
+
+    def setupGUI(self, parent):
+        parentFrame = ttk.Frame(parent)
+        parentFrame.grid(row=0, column=2, sticky='news')
         parentFrame.columnconfigure(0, weight=1)
         parentFrame.rowconfigure(0, weight=1)
 
@@ -222,7 +289,8 @@ class midPane:
         tree_scroll = ttk.Scrollbar(parent)
         tree_scroll.pack(side=RIGHT, fill=Y)
 
-        self.tree = ttk.Treeview(parent, selectmode='browse', yscrollcommand=tree_scroll.set)
+        self.tree = ttk.Treeview(
+            parent, selectmode='browse', yscrollcommand=tree_scroll.set)
         self.tree['columns'] = ['Register Number', 'Register Content']
 
         self.tree.column('#0', width=0, stretch=NO)
@@ -239,13 +307,14 @@ class midPane:
         self.tree.tag_configure('normal', background="white")
         self.tree.tag_configure('updated', background="lightgreen")
 
+
 class rightPane:
     def __init__(self, parent):
         self.setupGUI(parent)
-    
+
     def setupGUI(self, parent):
         parentFrame = ttk.Frame(parent)
-        parentFrame.grid(row=0, column=2, sticky='news')
+        parentFrame.grid(row=0, column=3, sticky='news')
         parentFrame.columnconfigure(0, weight=1)
         parentFrame.rowconfigure(0, weight=1)
 
@@ -265,7 +334,8 @@ class rightPane:
         tree_scroll = ttk.Scrollbar(parent)
         tree_scroll.pack(side=RIGHT, fill=Y)
 
-        self.tree = ttk.Treeview(parent, selectmode='browse', yscrollcommand=tree_scroll.set)
+        self.tree = ttk.Treeview(
+            parent, selectmode='browse', yscrollcommand=tree_scroll.set)
         self.tree['columns'] = ['Memory Address', 'Memory Content']
 
         self.tree.column('#0', width=0, stretch=NO)
@@ -283,7 +353,8 @@ class rightPane:
         self.tree.tag_configure('updated', background="lightyellow")
 
     def setupButtonFrame(self, parent):
-        ttk.Label(parent, text="Address to go: ").grid(row=0, column=0, sticky='nws')
+        ttk.Label(parent, text="Address to go: ").grid(
+            row=0, column=0, sticky='nws')
 
         self.toGo = StringVar()  # textbox to get input address
         toGoAddress = ttk.Entry(parent, width=16, textvariable=self.toGo)
@@ -311,16 +382,17 @@ class rightPane:
 
         return
 
+
 class bottomPane:
     def __init__(self, parent, win):
         self.win = win
 
         parentFrame = ttk.Frame(parent, border=1, relief=RIDGE)
-        parentFrame.grid(row=1, column=0, columnspan=3, sticky='news')
+        parentFrame.grid(row=1, column=0, columnspan=4, sticky='news')
         parentFrame.columnconfigure(0, weight=1)
         parentFrame.rowconfigure(0, weight=1)
         self.setupGUI(parentFrame)
-    
+
     def setupGUI(self, parent):
         self.filenameLabel = ttk.Label(parent, text='No File Selected')
         self.filenameLabel.grid(row=0, column=0, sticky='news')
@@ -345,31 +417,46 @@ class bottomPane:
             instrTree = win.lPane.tree
             regTree = win.mPane.tree
             memTree = win.rPane.tree
+            cacheTree = win.cPane.tree
 
             instrTree.delete(*instrTree.get_children())
             memTree.delete(*memTree.get_children())
             regTree.delete(*regTree.get_children())
+            cacheTree.delete(*cacheTree.get_children())
 
             text = True
             with open(filename, 'r') as infile:
                 for line in infile:
                     if text == True:
                         mloc, instr = [str(x) for x in line.split()]
-                        instrTree.insert(parent='', index='end', iid=int(mloc, 16), text="", values=(mloc, instr))
+                        instrTree.insert(parent='', index='end', iid=int(
+                            mloc, 16), text="", values=(mloc, instr))
                     else:
                         mloc, value = [hex(int(x, 16)) for x in line.split()]
-                        memTree.insert(parent='', index='end', iid=int(mloc, 16), text="", values=(mloc, value))
+                        memTree.insert(parent='', index='end', iid=int(
+                            mloc, 16), text="", values=(mloc, value))
                     if int(instr, 16) == TERMINATION_CODE:
                         text = False
             for i in range(32):
-                regTree.insert(parent='', index='end', iid=i, text="", values=('x'+str(i), '0x'+format(0, '08X')))
+                regTree.insert(parent='', index='end', iid=i, text="", values=(
+                    'x'+str(i), '0x'+format(0, '08X')))
+
+            cacheTree.insert(parent='', index='end', iid='Cache',
+                             text="", values=('Cache', '', ''), tags='victim')
+
+            for setNo in range(1, win.control.pmi.cache.numSets + 1):
+                cacheTree.insert(parent='Cache', index='end', iid='d$' +
+                                 str(setNo), text="", values=(setNo-1, '', ''), tag = 'heading')
+                for blockNo in range(1, win.control.pmi.cache.numBlocksPerSet + 1):
+                    cacheTree.insert(parent='Cache', index='end', iid='d$' +
+                                     str(setNo)+'$'+str(blockNo), text='', values=('', 0, 0))
 
             control = win.control
             pc = control.iag.PC
             register = control.reg.register
             memory = control.pmi.memory.byteData
             win.update(pc, register, memory)
-            
+
         except:
             print("Error Reading Instructions and Memory Values")
         return
@@ -382,7 +469,7 @@ class bottomPane:
 
 
 class cache_stats:
-    
+
     def __init__(self, parent, win, width=500, height=90):
         self.win = win
         self.width = 500
@@ -393,74 +480,55 @@ class cache_stats:
         self.d_misses_pane
         self.d_accesses_pane
         # instruction cache stats
-        self.i_hits_pane
-        self.i_misses_pane
-        self.i_accesses_pane
-        
+
     def setupGUI(self, parent):
         parentFrame = ttk.Frame(parent)
-        parentFrame.grid(row=2, column=2, sticky='news')
+        parentFrame.grid(row=2, column=1, sticky='news')
         parentFrame.columnconfigure(0, weight=1)
         parentFrame.rowconfigure(0, weight=1)
 
-        self.canvas = tk.Canvas(parentFrame, bg="white", width=self.width, height=self.height)
+        self.canvas = tk.Canvas(parentFrame, bg="white",
+                                width=self.width, height=self.height)
         self.canvas.pack()
-        #self.__draw()
-        self.d_hits_pane =self.canvas.create_text(100,15,fill="green",font="Times 15 italic bold",text="No. of D$ hits: 0")
-        self.d_misses_pane = self.canvas.create_text(100,45,fill="red",font="Times 15 italic bold",text="No. of D$ misses: 0")
-        self.d_accesses_pane = self.canvas.create_text(100,75,fill="darkblue",font="Times 15 italic bold",text="No. of D$ accesses: 0")
-        
-        self.i_hits_pane =self.canvas.create_text(350,15,fill="green",font="Times 15 italic bold",text="No. of I$ hits: 0")
-        self.i_misses_pane = self.canvas.create_text(350,45,fill="red",font="Times 15 italic bold",text="No. of I$ misses: 0")
-        self.i_accesses_pane = self.canvas.create_text(350,75,fill="darkblue",font="Times 15 italic bold",text="No. of I$ accesses: 0")
-        
+        # self.__draw()
+        self.d_hits_pane = self.canvas.create_text(
+            100, 15, fill="green", font="Times 15 italic bold", text="No. of D$ hits: 0")
+        self.d_misses_pane = self.canvas.create_text(
+            100, 45, fill="red", font="Times 15 italic bold", text="No. of D$ misses: 0")
+        self.d_accesses_pane = self.canvas.create_text(
+            100, 75, fill="darkblue", font="Times 15 italic bold", text="No. of D$ accesses: 0")
+
     def get_hits_data_cache(self, control):
         num_hits = control.pmi.cache.hits
         return num_hits
-    
+
     def get_misses_data_cache(self, control):
         num_misses = control.pmi.cache.misses
         return num_misses
-    
+
     def get_accesses_data_cache(self, control):
         num_accesses = control.pmi.cache.numAccesses
         return num_accesses
-    
-    def get_hits_intruction_cache(self, control):
-        num_hits = control.i_pmi.cache.hits
-        return num_hits
-    
-    def get_misses_intruction_cache(self, control):
-        num_misses = control.i_pmi.cache.misses
-        return num_misses
-    
-    def get_accesses_intruction_cache(self, control):
-        num_accesses = control.i_pmi.cache.numAccesses
-        return num_accesses       
-    
+
     def draw(self, control):
         if control is None:
             return
-        
+
         d_hits = self.get_hits_data_cache(control)
         d_misses = self.get_misses_data_cache(control)
         d_accesses = self.get_accesses_data_cache(control)
-        
-        self.canvas.itemconfigure(self.d_hits_pane, text = f"No. of D$ hits: {d_hits}")
-        self.canvas.itemconfigure(self.d_misses_pane, text = f"No. of D$ misses: {d_misses}")
-        self.canvas.itemconfigure(self.d_accesses_pane, text = f"No. of D$ accesses: {d_accesses}")
-        
-        i_hits = self.get_hits_intruction_cache(control)
-        i_misses = self.get_misses_intruction_cache(control)
-        i_accesses = self.get_accesses_intruction_cache(control)
-        
-        self.canvas.itemconfigure(self.i_hits_pane, text = f"No. of I$ hits: {i_hits}")
-        self.canvas.itemconfigure(self.i_misses_pane, text = f"No. of I$ misses: {i_misses}")
-        self.canvas.itemconfigure(self.i_accesses_pane, text = f"No. of I$ accesses: {i_accesses}")  
-        
-        
-        
+
+        self.canvas.itemconfigure(
+            self.d_hits_pane, text=f"No. of D$ hits: {d_hits}")
+        self.canvas.itemconfigure(
+            self.d_misses_pane, text=f"No. of D$ misses: {d_misses}")
+        self.canvas.itemconfigure(
+            self.d_accesses_pane, text=f"No. of D$ accesses: {d_accesses}")
+
     def __draw(self):
-        self.canvas.create_text(100,15,fill="green",font="Times 15 italic bold",text="No. of hits: 0")
-        self.canvas.create_text(100,45,fill="red",font="Times 15 italic bold",text="No. of misses: 0")
-        self.canvas.create_text(100,75,fill="darkblue",font="Times 15 italic bold",text="No. of accesses: 0")
+        self.canvas.create_text(
+            100, 15, fill="green", font="Times 15 italic bold", text="No. of hits: 0")
+        self.canvas.create_text(
+            100, 45, fill="red", font="Times 15 italic bold", text="No. of misses: 0")
+        self.canvas.create_text(
+            100, 75, fill="darkblue", font="Times 15 italic bold", text="No. of accesses: 0")

@@ -1,8 +1,9 @@
 print('Enter 1 for pipelined, 2 for non pipelined: ')
 pipelined = int(input())
-print('Enter cache size (in bytes), number of blocks per set, block size (in bytes) [space separated]')
+print(
+    'Enter cache size (in bytes), number of blocks per set, block size (in bytes) [space separated]')
 cacheSize, numBlocksPerSet, blockSize = map(int, input().strip().split())
-numSet = int(cacheSize/blockSize/numBlocksPerSet)
+numSet = cacheSize // (blockSize*numBlocksPerSet)
 
 if pipelined == 1:
     from pipelined.control import *
@@ -14,14 +15,14 @@ if pipelined == 1:
     control = Control(numSet, numBlocksPerSet, blockSize)
 
     if forwarding == 1:
-      control.forwarding = True
+        control.forwarding = True
     else:
-      control.forwarding = False
+        control.forwarding = False
 
     if printreg == 1:
-      control.print_registers = True
+        control.print_registers = True
     else:
-      control.print_registers = False
+        control.print_registers = False
     w = window(control)
 
 else:
