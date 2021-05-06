@@ -18,12 +18,15 @@ RISC-V is an open standard instruction set architecture based on established red
 - The current version supports the simulation for *32 bit* machine only.
 - Execution of each instruction is further split into 5 different parts: Fetch, Decode, Execute, Memory Access and Register Update.
 - At any step, user can jump directly to the end of the program, execute the current instruction and jump to next instruction or execute current substep and jump to next substep.
+- Number of cache accesses, hits and misses are visible for both _Data Cache_ as well as _Instructin Cache_ in case of pipelined implementation. For non-pipelined version, common cache is simulated.
+- For each miss in cache, victim block is also displayed.
+- Cache, Register and Memory content is also visible at all times.
 
 ### Instructions Supported
 ```
 R format  - add, and, or, sll, slt, sra, srl, sub, xor, mul, div, rem
-I format  - addi, andi, ori, lb, ld, lh, lw, jalr
-S format  - sb, sw, sd, sh
+I format  - addi, andi, ori, lb, lh, lw, jalr
+S format  - sb, sw, sh
 SB format - beq, bne, bge, blt
 U format  - auipc, lui
 UJ format - jal
@@ -32,18 +35,23 @@ UJ format - jal
 ### How to run ?
 
 
-- Clone the repository to your local machine. (Some features may not work properly on windows)
+- Clone the repository to your local machine. (**Some features may not work properly on windows**)
 - Install tkinter and python3 (tkinter is shipped with python).
 - Open terminal and run the following command.
 ```
         python3 main.py
         For pipelined version enter 1, for non-pipelined version, enter 2 on console.
+        Enter the Cache Size, number of blocks per set and block size (in bytes) as space separated valid integers.
         In case of pipelined version, to enable data forwarding, enter 1 else 2 for only stalling.
         In case of printing register file in each cycle, enter 1 else 2.
 ```
+Markdown
+Toggle Zen Mode
+Preview
+Toggle Mode
 
-### How to use the application ? 
-  [1 minute tutorial for non-pipelined version](https://drive.google.com/file/d/1Awq1aoI_zdwVIDJv-dfGpSKirQcaYJAN/view?usp=sharing)
+
+### How to use the application ?
 - Click on **File** in the menubar and select **open**.
 - Browse through your PC, select the required .mc file and click **open**.
 - The address of selected file should now be visible on the **bottom-most bar**.
@@ -90,6 +98,8 @@ The simulator also prints messages for each stage to the console. The format is 
 #
 6. *DETAILS / STATS*
 	    - All the details required are printed with labels for every cycle. For example, whenever there is a flush, it is indicated by FLUSH.
+7. *CACHE STATS*
+        - The hits, misses and all other required data regarding caches is printed to the console at the end of execution, although they can be seen at any intermediate stage as well via GUI.
 #
 
 ### Dependencies
@@ -126,10 +136,10 @@ RISC-V-Simulator
 ### Work Distribution
 Although we worked as a team and helped each other with the work assigned, following can give the idea of work distribution:
 ```
-Aayush Sabharwal - ALU, Control, Pipeline architecture, Updated ALU, Hazard Detection, Documentation
-Aman Palariya    - Memory, Pipeline architecture, Hazard Detection, Updated GUI, Documentation
-Sagalpreet Singh - IAG, GUI, Control (Minor), Pipeline architecture, Hazard Detection, Documentation
-Uday Gupta       - Register, Pipeline architecture, Updated Decode Stage, Updated IAG, Documentation
-Amritanshu Rai   - Updated Decode Stage, Updateg IAG, Testcases, Design Document, Documentation
+Aayush Sabharwal - ALU, Control, Pipeline architecture, Updated ALU, Hazard Detection, Data Forwarding, Cache, Documentation
+Aman Palariya    - Memory, Pipeline architecture, Hazard Detection, Updated GUI, Stall Handling, Cache, Documentation
+Sagalpreet Singh - IAG, GUI, Control (Minor), Pipeline architecture, Hazard Detection, Stall Handling, Cache, Documentation
+Uday Gupta       - Register, Pipeline architecture, Updated Decode Stage, Updated IAG, Counting the statistics, Data Forwarding, Cache, GUI, Documentation
+Amritanshu Rai   - Updated Decode Stage, Updated IAG, Test Cases, Design Document, Data Forwarding, Cache, Documentation
 
 ```
