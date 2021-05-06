@@ -14,16 +14,18 @@ class Cache:
         self.numBlocksPerSet = numBlocksPerSet
         self.blockSize = blockSize
 
-        self.sets = [Set(numBlocksPerSet) for i in range(numSets)]
+        self.sets = [Set(self, numBlocksPerSet) for i in range(numSets)]
 
         self.numAccesses = 0
         self.hits = 0
         self.misses = 0
+        self.victim = -1
 
     def readWrite(self, address, dataType):
+        self.victim = -1
         self.numAccesses += 1
-        index = address % self.numSets
-        tag = address - address % self.blockSize
+        tag = (address - address % self.blockSize) // self.blockSize
+        index = tag % self.numSets
 
         if self.sets[index].request(tag):
            self.hits += 1
@@ -31,7 +33,7 @@ class Cache:
             self.misses += 1
 
         end_address = address + dataType
-        end_tag = end_address - end_address % self.blockSize
+        end_tag = (end_address - end_address % self.blockSize) // self.blockSize
 
         if end_tag != tag:
             self.readWrite(end_address, 0)
@@ -44,7 +46,8 @@ class Cache:
 
 
 class Set:
-    def __init__(self, numBlocks):
+    def __init__(self, cache, numBlocks):
+        self.cache = cache
         self.numBlocks = numBlocks
         self.blocks = deque([], numBlocks)
     
@@ -54,6 +57,8 @@ class Set:
             self.blocks.append(tag)
             return True
         else:
+            if len(self.blocks) == self.numBlocks:
+                self.cache.victim = self.blocks[0]
             self.blocks.append(tag)
             return False
 
@@ -251,3 +256,10 @@ class ByteAddressableMemory:
         Updates the doubleword at `address` with `value`
         """
         self.__setValueAtAddress(address, self.getWordSizeInBytes()*2, value)
+
+    def getNBytes(self,address:int, n: int):
+
+        data = ""
+        for i in range(n):
+          data = str(format(self.__getValueAtAddress(address+i, 1), '02X')) + data
+        return data

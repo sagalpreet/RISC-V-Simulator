@@ -139,7 +139,7 @@ class window:
                 iid = 'd$'+str(i+1)+'$'+str(j+1)
                 tag = sets[i].blocks[j]
                 frmt = '0'+str(2*blockSize)+'X'
-                cacheTree.item(iid, values=('', '0x'+format(tag, '08X'), '0x'+format(self.control.pmi.memory.getNBytes(tag, blockSize), frmt)))
+                cacheTree.item(iid, values=('', '0x'+format(tag, '08X'), '0x'+self.control.pmi.memory.getNBytes(tag*blockSize, blockSize)))
 
 
 class leftPane:
@@ -473,12 +473,13 @@ class cache_stats:
     def __init__(self, parent, win, width=500, height=90):
         self.win = win
         self.width = 500
-        self.height = 90
+        self.height = 120
         self.setupGUI(parent)
         # data cache stats
         self.d_hits_pane
         self.d_misses_pane
         self.d_accesses_pane
+        self.d_victim_pane
         # instruction cache stats
 
     def setupGUI(self, parent):
@@ -492,11 +493,13 @@ class cache_stats:
         self.canvas.pack()
         # self.__draw()
         self.d_hits_pane = self.canvas.create_text(
-            100, 15, fill="green", font="Times 15 italic bold", text="No. of D$ hits: 0")
+            200, 15, fill="green", font="Times 15 italic bold", text="No. of D$ hits: 0")
         self.d_misses_pane = self.canvas.create_text(
-            100, 45, fill="red", font="Times 15 italic bold", text="No. of D$ misses: 0")
+            200, 45, fill="red", font="Times 15 italic bold", text="No. of D$ misses: 0")
         self.d_accesses_pane = self.canvas.create_text(
-            100, 75, fill="darkblue", font="Times 15 italic bold", text="No. of D$ accesses: 0")
+            200, 75, fill="darkblue", font="Times 15 italic bold", text="No. of D$ accesses: 0")
+        self.d_victim_pane = self.canvas.create_text(
+            200, 105, fill="purple", font="Times 15 italic bold", text="D$ Victim Block's Tag: -1")
 
     def get_hits_data_cache(self, control):
         num_hits = control.pmi.cache.hits
@@ -517,6 +520,7 @@ class cache_stats:
         d_hits = self.get_hits_data_cache(control)
         d_misses = self.get_misses_data_cache(control)
         d_accesses = self.get_accesses_data_cache(control)
+        d_victim = control.pmi.cache.victim
 
         self.canvas.itemconfigure(
             self.d_hits_pane, text=f"No. of D$ hits: {d_hits}")
@@ -524,6 +528,10 @@ class cache_stats:
             self.d_misses_pane, text=f"No. of D$ misses: {d_misses}")
         self.canvas.itemconfigure(
             self.d_accesses_pane, text=f"No. of D$ accesses: {d_accesses}")
+        if d_victim != -1:
+            d_victim = '0x'+format(d_victim, '08X')
+        self.canvas.itemconfigure(
+            self.d_victim_pane, text=f"D$ Victim Block's Tag: {d_victim}")
 
     def __draw(self):
         self.canvas.create_text(

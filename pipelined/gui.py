@@ -9,11 +9,12 @@ class window:
         self.setupMenu()
         self.setupMain()
         self.setupLeft()
+        self.setupCache()
         self.setupPipeline()
         self.setupRight()
         self.setupMid()
         self.setupBottom()
-        self.setupCache()
+        self.setupCacheStats()
         
         self.control = control
 
@@ -72,10 +73,13 @@ class window:
     def setupLeft(self):
         self.lPane = leftPane(self.mainframe, self)
 
+    def setupCache(self):
+        self.cPane = cachePane(self.mainframe, self)
+
     def setupPipeline(self):
         self.pPane = pipelineView(self.mainframe, self)
     
-    def setupCache(self):
+    def setupCacheStats(self):
         self.cachePane = cache_stats(self.mainframe, self)
 
     def setupMid(self):
@@ -127,6 +131,30 @@ class window:
                 '0x'+format(i, '08X'), '0x'+format(memory[i], '02X')))
         self.pPane.draw(self.control)
         self.cachePane.draw(self.control)
+
+        # update cache
+        cacheTree = self.cPane.tree
+        sets = self.control.pmi.cache.sets
+        numSets = self.control.pmi.cache.numSets
+        numBlocksPerSet = self.control.pmi.cache.numBlocksPerSet
+        blockSize = self.control.pmi.cache.blockSize
+        for i in range(numSets):
+            for j in range(len(sets[i].blocks)):
+                iid = 'd$'+str(i+1)+'$'+str(j+1)
+                tag = sets[i].blocks[j]
+                frmt = '0'+str(2*blockSize)+'X'
+                cacheTree.item(iid, values=('', '0x'+format(tag, '08X'), '0x'+self.control.pmi.memory.getNBytes(tag*blockSize, blockSize)))
+
+        sets = self.control.i_pmi.cache.sets
+        numSets = self.control.i_pmi.cache.numSets
+        numBlocksPerSet = self.control.i_pmi.cache.numBlocksPerSet
+        blockSize = self.control.i_pmi.cache.blockSize
+        for i in range(numSets):
+            for j in range(len(sets[i].blocks)):
+                iid = 'i$'+str(i+1)+'$'+str(j+1)
+                tag = sets[i].blocks[j]
+                frmt = '0'+str(2*blockSize)+'X'
+                cacheTree.item(iid, values=('', '0x'+format(tag, '08X'), '0x'+self.control.i_pmi.memory.getNBytes(tag*blockSize, blockSize)))
 
 
 class leftPane:
@@ -216,6 +244,48 @@ class leftPane:
         self.win.update(pc, register, memory)
         return
 
+class cachePane:
+    def __init__(self, parent, win):
+        self.win = win
+
+        self.setupGUI(parent)
+
+    def setupGUI(self, parent):
+        parentFrame = ttk.Frame(parent)
+        parentFrame.grid(row=0, column=1, sticky='news')
+        parentFrame.columnconfigure(0, weight=1)
+        parentFrame.rowconfigure(0, weight=1)
+
+        cacheFrame = ttk.Frame(parentFrame)
+        cacheFrame.grid(row=0, column=0, sticky='nws')
+        cacheFrame.columnconfigure(0, weight=1)
+        cacheFrame.rowconfigure(0, weight=1)
+        self.setupCacheFrame(cacheFrame)
+
+    def setupCacheFrame(self, parent):
+        tree_scroll = ttk.Scrollbar(parent)
+        tree_scroll.pack(side=RIGHT, fill=Y)
+
+        self.tree = ttk.Treeview(
+            parent, selectmode='none', yscrollcommand=tree_scroll.set)
+        self.tree['columns'] = ['Set Number', 'Tag', 'Cache Content']
+
+        self.tree.column('#0', width=20, stretch=NO)
+        self.tree.column('Set Number', width=100, anchor=CENTER)
+        self.tree.column('Cache Content', anchor=CENTER)
+        self.tree.column('Tag', width=50, anchor=CENTER)
+
+        self.tree.heading('Set Number', text='Set Number')
+        self.tree.heading('Cache Content', text='Cache Content')
+        self.tree.heading('Tag', text='Tag')
+
+        self.tree.pack(side=LEFT, fill=BOTH, expand=True)
+        tree_scroll.config(command=self.tree.yview)
+        #self.tree.grid(row=0, column=0, sticky='news')
+
+        self.tree.tag_configure('heading', background="lightyellow")
+        self.tree.tag_configure('victim', background="lightgreen")
+
 
 class midPane:
     def __init__(self, parent):
@@ -223,7 +293,7 @@ class midPane:
 
     def setupGUI(self, parent):
         parentFrame = ttk.Frame(parent)
-        parentFrame.grid(row=0, column=1, sticky='news')
+        parentFrame.grid(row=0, column=2, sticky='news')
         parentFrame.columnconfigure(0, weight=1)
         parentFrame.rowconfigure(0, weight=1)
 
@@ -258,7 +328,7 @@ class rightPane:
 
     def setupGUI(self, parent):
         parentFrame = ttk.Frame(parent)
-        parentFrame.grid(row=0, column=2, sticky='news')
+        parentFrame.grid(row=0, column=3, sticky='news')
         parentFrame.columnconfigure(0, weight=1)
         parentFrame.rowconfigure(0, weight=1)
 
@@ -280,14 +350,14 @@ class rightPane:
 
         self.tree = ttk.Treeview(
             parent, selectmode='browse', yscrollcommand=tree_scroll.set)
-        self.tree['columns'] = ['Memory Address', 'Memory Content']
+        self.tree['columns'] = ['Memory Address', 'Data']
 
         self.tree.column('#0', width=0, stretch=NO)
-        self.tree.column('Memory Address', width=200, anchor=CENTER)
-        self.tree.column('Memory Content', anchor=CENTER)
+        self.tree.column('Memory Address', anchor=CENTER)
+        self.tree.column('Data', width=50, anchor=CENTER)
 
         self.tree.heading('Memory Address', text='Memory Address')
-        self.tree.heading('Memory Content', text='Memory Content')
+        self.tree.heading('Data', text='Data')
 
         self.tree.pack(side=LEFT, fill=BOTH)
         tree_scroll.config(command=self.tree.yview)
@@ -301,7 +371,7 @@ class rightPane:
             row=0, column=0, sticky='nws')
 
         self.toGo = StringVar()  # textbox to get input address
-        toGoAddress = ttk.Entry(parent, width=16, textvariable=self.toGo)
+        toGoAddress = ttk.Entry(parent, width=10, textvariable=self.toGo)
         toGoAddress.grid(row=0, column=1, sticky='news')
 
         # button to go to some memory address
@@ -332,7 +402,7 @@ class bottomPane:
         self.win = win
 
         parentFrame = ttk.Frame(parent, border=1, relief=RIDGE)
-        parentFrame.grid(row=1, column=0, columnspan=3, sticky='news')
+        parentFrame.grid(row=1, column=0, columnspan=5, sticky='news')
         parentFrame.columnconfigure(0, weight=1)
         parentFrame.rowconfigure(0, weight=1)
         self.setupGUI(parentFrame)
@@ -361,10 +431,12 @@ class bottomPane:
             instrTree = win.lPane.tree
             regTree = win.mPane.tree
             memTree = win.rPane.tree
+            cacheTree = win.cPane.tree
 
             instrTree.delete(*instrTree.get_children())
             memTree.delete(*memTree.get_children())
             regTree.delete(*regTree.get_children())
+            cacheTree.delete(*cacheTree.get_children())
 
             text = True
             with open(filename, 'r') as infile:
@@ -382,6 +454,26 @@ class bottomPane:
             for i in range(32):
                 regTree.insert(parent='', index='end', iid=i, text="", values=(
                     'x'+str(i), '0x'+format(0, '08X')))
+            
+            cacheTree.insert(parent='', index='end', iid='Data Cache',
+                             text="", values=('Data', 'Cache', ''), tags='victim')
+            
+            cacheTree.insert(parent='', index='end', iid='Instruction Cache',
+                             text="", values=('Instruction', 'Cache', ''), tags='victim')
+
+            for setNo in range(1, win.control.pmi.cache.numSets + 1):
+                cacheTree.insert(parent='Data Cache', index='end', iid='d$' +
+                                 str(setNo), text="", values=(setNo-1, '', ''), tag = 'heading')
+                for blockNo in range(1, win.control.pmi.cache.numBlocksPerSet + 1):
+                    cacheTree.insert(parent='Data Cache', index='end', iid='d$' +
+                                     str(setNo)+'$'+str(blockNo), text='', values=('', 0, 0))
+            
+            for setNo in range(1, win.control.i_pmi.cache.numSets + 1):
+                cacheTree.insert(parent='Instruction Cache', index='end', iid='i$' +
+                                 str(setNo), text="", values=(setNo-1, '', ''), tag = 'heading')
+                for blockNo in range(1, win.control.i_pmi.cache.numBlocksPerSet + 1):
+                    cacheTree.insert(parent='Instruction Cache', index='end', iid='i$' +
+                                     str(setNo)+'$'+str(blockNo), text='', values=('', 0, 0))
 
             control = win.control
             pc = control.iag.PC
@@ -578,8 +670,8 @@ class cache_stats:
     
     def __init__(self, parent, win, width=500, height=90):
         self.win = win
-        self.width = 500
-        self.height = 90
+        self.width = 2000
+        self.height = 60
         self.setupGUI(parent)
         # data cache stats
         self.d_hits_pane
@@ -592,7 +684,7 @@ class cache_stats:
         
     def setupGUI(self, parent):
         parentFrame = ttk.Frame(parent)
-        parentFrame.grid(row=1, column=4, sticky='news')
+        parentFrame.grid(row=2, column=0, columnspan=5, sticky='news')
         parentFrame.columnconfigure(0, weight=1)
         parentFrame.rowconfigure(0, weight=1)
 
@@ -601,11 +693,13 @@ class cache_stats:
         #self.__draw()
         self.d_hits_pane =self.canvas.create_text(100,15,fill="green",font="Times 15 italic bold",text="No. of D$ hits: 0")
         self.d_misses_pane = self.canvas.create_text(100,45,fill="red",font="Times 15 italic bold",text="No. of D$ misses: 0")
-        self.d_accesses_pane = self.canvas.create_text(100,75,fill="darkblue",font="Times 15 italic bold",text="No. of D$ accesses: 0")
+        self.d_accesses_pane = self.canvas.create_text(350,15,fill="darkblue",font="Times 15 italic bold",text="No. of D$ accesses: 0")
+        self.d_victim_pane = self.canvas.create_text(350,45,fill="purple",font="Times 15 italic bold",text="D$ Victim Block's Tag: -1")
         
-        self.i_hits_pane =self.canvas.create_text(350,15,fill="green",font="Times 15 italic bold",text="No. of I$ hits: 0")
-        self.i_misses_pane = self.canvas.create_text(350,45,fill="red",font="Times 15 italic bold",text="No. of I$ misses: 0")
-        self.i_accesses_pane = self.canvas.create_text(350,75,fill="darkblue",font="Times 15 italic bold",text="No. of I$ accesses: 0")
+        self.i_hits_pane =self.canvas.create_text(600,15,fill="green",font="Times 15 italic bold",text="No. of I$ hits: 0")
+        self.i_misses_pane = self.canvas.create_text(600,45,fill="red",font="Times 15 italic bold",text="No. of I$ misses: 0")
+        self.i_accesses_pane = self.canvas.create_text(850,15,fill="darkblue",font="Times 15 italic bold",text="No. of I$ accesses: 0")
+        self.i_victim_pane = self.canvas.create_text(850,45,fill="purple",font="Times 15 italic bold",text="I$ Victim Block's Tag: -1")
         
     def get_hits_data_cache(self, control):
         num_hits = control.pmi.cache.hits
@@ -638,18 +732,26 @@ class cache_stats:
         d_hits = self.get_hits_data_cache(control)
         d_misses = self.get_misses_data_cache(control)
         d_accesses = self.get_accesses_data_cache(control)
+        d_victim = control.pmi.cache.victim
         
         self.canvas.itemconfigure(self.d_hits_pane, text = f"No. of D$ hits: {d_hits}")
         self.canvas.itemconfigure(self.d_misses_pane, text = f"No. of D$ misses: {d_misses}")
         self.canvas.itemconfigure(self.d_accesses_pane, text = f"No. of D$ accesses: {d_accesses}")
+        if d_victim != -1:
+            d_victim = '0x'+format(d_victim, '08X')
+        self.canvas.itemconfigure(self.d_victim_pane, text = f"D$ Victim Block's Tag: {d_victim}")
         
         i_hits = self.get_hits_intruction_cache(control)
         i_misses = self.get_misses_intruction_cache(control)
         i_accesses = self.get_accesses_intruction_cache(control)
+        i_victim = control.i_pmi.cache.victim
         
         self.canvas.itemconfigure(self.i_hits_pane, text = f"No. of I$ hits: {i_hits}")
         self.canvas.itemconfigure(self.i_misses_pane, text = f"No. of I$ misses: {i_misses}")
-        self.canvas.itemconfigure(self.i_accesses_pane, text = f"No. of I$ accesses: {i_accesses}")  
+        self.canvas.itemconfigure(self.i_accesses_pane, text = f"No. of I$ accesses: {i_accesses}")
+        if i_victim != -1:
+            i_victim = '0x'+format(i_victim, '08X')  
+        self.canvas.itemconfigure(self.i_victim_pane, text = f"I$ Victim Block's Tag: {i_victim}")
         
         
         
