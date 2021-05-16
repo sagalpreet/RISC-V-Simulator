@@ -78,7 +78,6 @@ class Control:
         self.stages = [1]
         self.stall = False
         self.flush = False
-        self.forwarding = False
 
         # global variables
         self.IR = 0
